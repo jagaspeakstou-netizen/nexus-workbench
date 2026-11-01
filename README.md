@@ -8,12 +8,12 @@ technical assignment (Web & Software Development track).
 ## Status
 
 Implemented and verified: **Geometry Lab**, **Thermal Analysis**,
-**Performance Lab** (plus the API/core walking skeleton and Overview page).
-Not yet implemented: Hardware Integration, Neural Computation, Validation
-pass, Documentation — all honestly reported as pending in the UI itself,
-not stubbed out silently. See `/api/status` for the live, code-driven
-source of this list (`backend/src/core/status.cpp`), which is what the
-Overview page actually renders.
+**Performance Lab**, **Neural Computation** (plus the API/core walking
+skeleton and Overview page). Not yet implemented: Hardware Integration,
+Validation pass, Documentation — all honestly reported as pending in the
+UI itself, not stubbed out silently. See `/api/status` for the live,
+code-driven source of this list (`backend/src/core/status.cpp`), which is
+what the Overview page actually renders.
 
 ## Prerequisites (source build)
 

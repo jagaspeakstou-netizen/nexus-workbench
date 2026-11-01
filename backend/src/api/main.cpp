@@ -17,6 +17,7 @@
 #include <sstream>
 
 #include "nexus/geometry.hpp"
+#include "nexus/neural.hpp"
 #include "nexus/performance.hpp"
 #include "nexus/status.hpp"
 #include "nexus/thermal.hpp"
@@ -144,6 +145,58 @@ json performance_report_to_json(const nexus::performance::BenchmarkReport& r) {
         {"max_abs_agreement_error_C", r.max_abs_agreement_error_C},
         {"warmup_note", r.warmup_note},
         {"launch_to_ready_note", r.launch_to_ready_note},
+    };
+}
+
+json neural_result_to_json(const nexus::neural::TrainingResult& r) {
+    json grad_check_entries = json::array();
+    for (const auto& e : r.gradient_check.entries) {
+        grad_check_entries.push_back({
+            {"param_name", e.param_name},
+            {"analytic", e.analytic},
+            {"finite_difference", e.finite_difference},
+            {"abs_difference", e.abs_difference},
+            {"within_tolerance", e.within_tolerance},
+        });
+    }
+
+    json history = json::array();
+    for (const auto& rec : r.history) {
+        history.push_back({
+            {"step", rec.step},
+            {"w", rec.params_before.w}, {"b", rec.params_before.b},
+            {"v", rec.params_before.v}, {"c", rec.params_before.c},
+            {"z", rec.forward.z}, {"h", rec.forward.h},
+            {"y_hat", rec.forward.y_hat}, {"loss", rec.forward.loss},
+            {"dw", rec.grad.dw}, {"db", rec.grad.db},
+            {"dv", rec.grad.dv}, {"dc", rec.grad.dc},
+        });
+    }
+
+    return json{
+        {"problem", {
+            {"x", r.problem.x},
+            {"y_target", r.problem.y_target},
+            {"learning_rate", r.problem.learning_rate},
+            {"num_steps", r.problem.num_steps},
+            {"init_params", {
+                {"w", r.problem.init_params.w}, {"b", r.problem.init_params.b},
+                {"v", r.problem.init_params.v}, {"c", r.problem.init_params.c},
+            }},
+        }},
+        {"gradient_check", {
+            {"epsilon", r.gradient_check.epsilon},
+            {"tolerance", r.gradient_check.tolerance},
+            {"all_within_tolerance", r.gradient_check.all_within_tolerance},
+            {"entries", grad_check_entries},
+        }},
+        {"history", history},
+        {"initial_loss", r.initial_loss},
+        {"final_loss", r.final_loss},
+        {"final_params", {
+            {"w", r.final_params.w}, {"b", r.final_params.b},
+            {"v", r.final_params.v}, {"c", r.final_params.c},
+        }},
     };
 }
 
@@ -287,6 +340,12 @@ int main(int argc, char** argv) {
 
         const auto report = nexus::performance::run_full_benchmark(config);
         res.set_content(performance_report_to_json(report).dump(), "application/json");
+    });
+
+    server.Get("/api/neural/train", [](const httplib::Request&, httplib::Response& res) {
+        nexus::neural::ProblemDefinition problem;  // defaults: the brief's example network
+        const auto result = nexus::neural::train(problem);
+        res.set_content(neural_result_to_json(result).dump(), "application/json");
     });
 
     std::cout << "NEXUS backend listening on http://127.0.0.1:" << port << "\n";

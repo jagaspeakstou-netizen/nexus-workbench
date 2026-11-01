@@ -1,0 +1,5 @@
+param,analytic,finite_difference,abs_difference,within_tolerance
+w,-1.20946,-1.20946,1.09026e-10,true
+b,-1.20946,-1.20946,1.09026e-10,true
+v,-0.710682,-0.710682,5.25383e-11,true
+c,-1.53788,-1.53788,1.11755e-10,true
