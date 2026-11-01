@@ -2,10 +2,10 @@ import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Overview from "./pages/Overview";
 import ThermalAnalysis from "./pages/ThermalAnalysis";
+import GeometryLab from "./pages/GeometryLab";
 import PendingModule from "./pages/PendingModule";
 
 const PENDING_DAYS: Record<string, string> = {
-  geometry: "Day 6–7",
   performance: "Day 8",
   hardware: "Day 10",
   neural: "Day 9",
@@ -34,6 +34,8 @@ export default function App() {
           <Overview />
         ) : active === "thermal" ? (
           <ThermalAnalysis />
+        ) : active === "geometry" ? (
+          <GeometryLab />
         ) : (
           <PendingModule label={LABELS[active]} dayPlanned={PENDING_DAYS[active]} />
         )}
