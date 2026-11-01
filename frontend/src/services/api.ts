@@ -1,6 +1,7 @@
 import type { BackendStatus } from "../types/status";
 import type { ThermalStudy } from "../types/thermal";
 import type { StlParseResponse, CsvParseResponse } from "../types/geometry";
+import type { BenchmarkReportDto } from "../types/performance";
 
 // Single place that knows the backend's base URL. In dev, Vite proxies
 // nothing -- we hit the C++ server directly on :8787 (CORS is enabled
@@ -84,4 +85,17 @@ export function fetchSampleStl(): Promise<string> {
 
 export function fetchSampleCsv(): Promise<string> {
   return fetchRawText("/api/geometry/sample/csv");
+}
+
+export async function fetchBenchmark(): Promise<BenchmarkReportDto> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/performance/benchmark`);
+  } catch (err) {
+    throw new ApiError("Could not reach the NEXUS backend. Is nexus_server running on port 8787?");
+  }
+  if (!res.ok) {
+    throw new ApiError(`Backend returned ${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as BenchmarkReportDto;
 }

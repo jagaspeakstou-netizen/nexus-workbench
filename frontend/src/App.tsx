@@ -3,10 +3,10 @@ import Sidebar from "./components/Sidebar";
 import Overview from "./pages/Overview";
 import ThermalAnalysis from "./pages/ThermalAnalysis";
 import GeometryLab from "./pages/GeometryLab";
+import PerformanceLab from "./pages/PerformanceLab";
 import PendingModule from "./pages/PendingModule";
 
 const PENDING_DAYS: Record<string, string> = {
-  performance: "Day 8",
   hardware: "Day 10",
   neural: "Day 9",
   validation: "Day 11",
@@ -36,6 +36,8 @@ export default function App() {
           <ThermalAnalysis />
         ) : active === "geometry" ? (
           <GeometryLab />
+        ) : active === "performance" ? (
+          <PerformanceLab />
         ) : (
           <PendingModule label={LABELS[active]} dayPlanned={PENDING_DAYS[active]} />
         )}
