@@ -16,3 +16,4 @@ results/benchmarks/*
 !results/csv/.gitkeep
 !results/plots/.gitkeep
 !results/benchmarks/.gitkeep
+frontend/tsconfig.tsbuildinfo
