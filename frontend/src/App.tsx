@@ -5,10 +5,10 @@ import ThermalAnalysis from "./pages/ThermalAnalysis";
 import GeometryLab from "./pages/GeometryLab";
 import PerformanceLab from "./pages/PerformanceLab";
 import NeuralComputation from "./pages/NeuralComputation";
+import HardwareIntegration from "./pages/HardwareIntegration";
 import PendingModule from "./pages/PendingModule";
 
 const PENDING_DAYS: Record<string, string> = {
-  hardware: "Day 10",
   validation: "Day 11",
   docs: "Day 14",
 };
@@ -40,6 +40,8 @@ export default function App() {
           <PerformanceLab />
         ) : active === "neural" ? (
           <NeuralComputation />
+        ) : active === "hardware" ? (
+          <HardwareIntegration />
         ) : (
           <PendingModule label={LABELS[active]} dayPlanned={PENDING_DAYS[active]} />
         )}

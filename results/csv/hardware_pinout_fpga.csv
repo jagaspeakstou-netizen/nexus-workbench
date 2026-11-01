@@ -1,0 +1,12 @@
+device_type,name,function,voltage_v,direction
+fpga,VCCINT,"Core logic supply",1,power
+fpga,VCCAUX,"Auxiliary supply (config, clocking)",1.8,power
+fpga,VCCO_33,"Bank I/O supply (3.3V bank)",3.3,power
+fpga,GND,"Ground",0,ground
+fpga,TDI,"JTAG test data in",3.3,input
+fpga,TDO,"JTAG test data out",3.3,output
+fpga,TCK,"JTAG test clock",3.3,input
+fpga,TMS,"JTAG test mode select",3.3,input
+fpga,PROG_B,"Active-low configuration reset",3.3,input
+fpga,DONE,"Configuration-complete status",3.3,output
+fpga,INIT_B,"Configuration init/error status",3.3,bidirectional

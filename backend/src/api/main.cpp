@@ -17,6 +17,7 @@
 #include <sstream>
 
 #include "nexus/geometry.hpp"
+#include "nexus/hardware_mocks.hpp"
 #include "nexus/neural.hpp"
 #include "nexus/performance.hpp"
 #include "nexus/status.hpp"
@@ -200,6 +201,101 @@ json neural_result_to_json(const nexus::neural::TrainingResult& r) {
     };
 }
 
+json hw_device_to_json(const nexus::hardware::DeviceDescriptor& d) {
+    return json{
+        {"id", d.id},
+        {"type", nexus::hardware::to_string(d.type)},
+        {"vendor", d.vendor},
+        {"label", d.label},
+        {"interface", d.interface},
+    };
+}
+
+json hw_connect_to_json(const nexus::hardware::ConnectResult& r) {
+    json attempts = json::array();
+    for (const auto& a : r.attempts) {
+        std::string outcome = a.outcome == nexus::hardware::ConnectOutcome::Connected ? "connected"
+            : a.outcome == nexus::hardware::ConnectOutcome::TimedOut ? "timed_out"
+                                                                      : "device_not_found";
+        attempts.push_back({
+            {"attempt_number", a.attempt_number},
+            {"outcome", outcome},
+            {"simulated_latency_ms", a.simulated_latency_ms},
+        });
+    }
+    return json{
+        {"device_id", r.device_id},
+        {"connected", r.connected},
+        {"attempts", attempts},
+        {"session_token", r.session_token},
+    };
+}
+
+json hw_telemetry_to_json(const nexus::hardware::TelemetrySession& t) {
+    json samples = json::array();
+    for (const auto& s : t.samples) {
+        samples.push_back({
+            {"sample_index", s.sample_index},
+            {"timestamp_s", s.timestamp_s},
+            {"voltage_v", s.voltage_v},
+            {"temperature_c", s.temperature_c},
+            {"clock_locked", s.clock_locked},
+            {"note", s.note},
+        });
+    }
+    return json{
+        {"device_id", t.device_id},
+        {"samples", samples},
+        {"dropout_count", t.dropout_count},
+        {"recovery_count", t.recovery_count},
+        {"all_dropouts_recovered", t.all_dropouts_recovered},
+    };
+}
+
+json hw_pin_to_json(const nexus::hardware::PinInfo& p) {
+    return json{
+        {"name", p.name}, {"function", p.function},
+        {"voltage_v", p.voltage_v}, {"direction", p.direction},
+    };
+}
+
+// Runs the full mock sequence (discover -> connect -> telemetry) for
+// every device of every type, in one response -- this is a MOCK/SIMULATED
+// hardware session, never a real device readout (see
+// backend/include/nexus/hardware_mocks.hpp for why).
+json hw_full_report_to_json() {
+    using namespace nexus::hardware;
+    json types = json::array();
+    for (DeviceType type : {DeviceType::Microcontroller, DeviceType::Fpga, DeviceType::Jtag}) {
+        json devices_json = json::array();
+        for (const auto& device : discover_devices(type)) {
+            auto session = connect(device);
+            json entry{
+                {"device", hw_device_to_json(device)},
+                {"connect", hw_connect_to_json(session)},
+            };
+            if (session.connected) {
+                auto telemetry = read_telemetry(session, 20);
+                entry["telemetry"] = hw_telemetry_to_json(telemetry);
+            }
+            devices_json.push_back(entry);
+        }
+        json pins = json::array();
+        for (const auto& p : pinout(type)) {
+            pins.push_back(hw_pin_to_json(p));
+        }
+        types.push_back({
+            {"type", to_string(type)},
+            {"devices", devices_json},
+            {"pinout", pins},
+        });
+    }
+    return json{{"mock_disclaimer",
+                  "All data below is from a deterministic software simulator -- no physical "
+                  "hardware is attached to this project."},
+                 {"types", types}};
+}
+
 // Sample data files are looked up relative to a few likely working
 // directories so the server behaves the same whether it's launched from
 // backend/build (typical local dev) or the repo root (e.g. from a
@@ -346,6 +442,10 @@ int main(int argc, char** argv) {
         nexus::neural::ProblemDefinition problem;  // defaults: the brief's example network
         const auto result = nexus::neural::train(problem);
         res.set_content(neural_result_to_json(result).dump(), "application/json");
+    });
+
+    server.Get("/api/hardware/report", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content(hw_full_report_to_json().dump(), "application/json");
     });
 
     std::cout << "NEXUS backend listening on http://127.0.0.1:" << port << "\n";

@@ -19,6 +19,7 @@ add_library(nexus_core
   src/performance/performance.cpp
   src/performance/hardware.cpp
   src/neural/neural.cpp
+  src/hardware/hardware_mocks.cpp
 )
 target_include_directories(nexus_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -49,6 +50,9 @@ target_link_libraries(nexus_performance_export PRIVATE nexus_core)
 add_executable(nexus_neural_export src/neural/export_main.cpp)
 target_link_libraries(nexus_neural_export PRIVATE nexus_core)
 
+add_executable(nexus_hardware_export src/hardware/export_main.cpp)
+target_link_libraries(nexus_hardware_export PRIVATE nexus_core)
+
 # Windows one-click packaging (Launch.exe): a WebView2 shell that spawns
 # nexus_server.exe and displays the built frontend. Only configured when
 # actually targeting Windows -- this dev container is Linux, so this
@@ -78,6 +82,7 @@ if(NEXUS_BUILD_TESTS)
       tests/test_geometry.cpp
       tests/test_performance.cpp
       tests/test_neural.cpp
+      tests/test_hardware_mocks.cpp
     )
     target_link_libraries(nexus_tests PRIVATE nexus_core GTest::gtest_main)
     include(GoogleTest)

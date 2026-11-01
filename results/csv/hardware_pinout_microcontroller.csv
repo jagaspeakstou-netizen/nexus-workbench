@@ -1,0 +1,10 @@
+device_type,name,function,voltage_v,direction
+microcontroller,VCC,"Supply voltage",5,power
+microcontroller,GND,"Ground",0,ground
+microcontroller,RESET,"Active-low reset",5,input
+microcontroller,PB0-PB7,"Port B general-purpose I/O (one bank)",5,bidirectional
+microcontroller,PC0-PC5,"Port C / ADC input channels",5,bidirectional
+microcontroller,PD0 (RXD),"UART receive",5,input
+microcontroller,PD1 (TXD),"UART transmit",5,output
+microcontroller,AVCC,"Analog supply (ADC)",5,power
+microcontroller,AREF,"ADC reference voltage",5,input

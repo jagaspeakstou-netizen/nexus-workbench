@@ -1,0 +1,10 @@
+device_type,name,function,voltage_v,direction
+jtag,VTREF,"Target reference voltage (sense, not supply)",3.3,input
+jtag,TMS/SWDIO,"Test mode select / SWD data",3.3,bidirectional
+jtag,GND,"Ground",0,ground
+jtag,TCK/SWCLK,"Test clock / SWD clock",3.3,input
+jtag,GND,"Ground",0,ground
+jtag,TDO/SWO,"Test data out / Serial wire output",3.3,output
+jtag,NC/KEY,"Key pin (no connect)",0,ground
+jtag,TDI,"Test data in",3.3,input
+jtag,nRESET,"Target reset",3.3,bidirectional

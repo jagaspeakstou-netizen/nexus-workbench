@@ -8,12 +8,21 @@ technical assignment (Web & Software Development track).
 ## Status
 
 Implemented and verified: **Geometry Lab**, **Thermal Analysis**,
-**Performance Lab**, **Neural Computation** (plus the API/core walking
-skeleton and Overview page). Not yet implemented: Hardware Integration,
-Validation pass, Documentation — all honestly reported as pending in the
-UI itself, not stubbed out silently. See `/api/status` for the live,
-code-driven source of this list (`backend/src/core/status.cpp`), which is
-what the Overview page actually renders.
+**Performance Lab**, **Neural Computation**, **Hardware Integration**
+(mock adapters — see caveat below) (plus the API/core walking skeleton
+and Overview page). Not yet implemented: Validation pass, Documentation —
+all honestly reported as pending in the UI itself, not stubbed out
+silently. See `/api/status` for the live, code-driven source of this
+list (`backend/src/core/status.cpp`), which is what the Overview page
+actually renders.
+
+**Hardware Integration caveat:** no physical microcontroller, FPGA, or
+JTAG probe is attached to this project. That module is a deterministic
+software simulator implementing the adapter pattern (discovery/connect/
+telemetry/timeout-recovery) the assignment asks for — disclosed
+prominently in the API response, the UI, and
+[`docs/architecture/hardware_mocks.md`](docs/architecture/hardware_mocks.md),
+never presented as real device data.
 
 ## Prerequisites (source build)
 
