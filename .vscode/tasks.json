@@ -1,0 +1,51 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "NEXUS: Configure backend (CMake)",
+      "type": "shell",
+      "command": "cmake -S backend -B backend/build -DCMAKE_BUILD_TYPE=Release",
+      "problemMatcher": []
+    },
+    {
+      "label": "NEXUS: Build backend",
+      "type": "shell",
+      "command": "cmake --build backend/build --config Release --parallel",
+      "dependsOn": ["NEXUS: Configure backend (CMake)"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "NEXUS: Run backend server",
+      "type": "shell",
+      "command": "./nexus_server",
+      "windows": { "command": ".\\nexus_server.exe" },
+      "options": { "cwd": "${workspaceFolder}/backend/build" },
+      "dependsOn": ["NEXUS: Build backend"],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "NEXUS: Install frontend deps",
+      "type": "shell",
+      "command": "npm ci",
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "NEXUS: Run frontend dev server",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "dependsOn": ["NEXUS: Install frontend deps"],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "NEXUS: Run full stack (backend + frontend)",
+      "dependsOn": ["NEXUS: Run backend server", "NEXUS: Run frontend dev server"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}

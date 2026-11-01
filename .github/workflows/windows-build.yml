@@ -1,0 +1,110 @@
+# Builds the NEXUS backend + frontend + Windows launcher shell on a real
+# windows-latest GitHub Actions runner, runs the C++ unit test suite there,
+# launches the packaged Launch.exe on that runner's own desktop session,
+# and captures a screenshot of it actually running plus the full build/test
+# log as workflow artifacts.
+#
+# This is the project's source of genuine (not fabricated) Windows 11
+# build-and-launch evidence -- see docs/packaging/windows.md for how the
+# artifacts from an actual run of this workflow are used in the submission,
+# and for what to do if any step here fails (fix and re-run, never hand-edit
+# the resulting evidence).
+
+name: windows-build
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-verify:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build frontend (Vite production bundle)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Report vcpkg location (pre-installed on windows-latest)
+        run: |
+          echo "VCPKG_INSTALLATION_ROOT=$env:VCPKG_INSTALLATION_ROOT"
+          dir "$env:VCPKG_INSTALLATION_ROOT"
+
+      - name: Configure CMake (Release, vcpkg manifest mode, WIN32 launcher target included)
+        working-directory: backend
+        run: >
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+
+      - name: Build (backend + nexus_launcher / Launch.exe)
+        working-directory: backend
+        run: cmake --build build --config Release --parallel
+
+      - name: Run C++ unit tests (ctest) on Windows
+        working-directory: backend
+        run: ctest --test-dir build -C Release --output-on-failure
+        # Intentionally NOT continue-on-error: a real test failure on
+        # Windows must fail this workflow, not be hidden from the evidence.
+
+      - name: Locate the packaged application folder
+        id: locate
+        working-directory: backend
+        run: |
+          $launchExe = Get-ChildItem -Path build -Recurse -Filter "Launch.exe" | Select-Object -First 1
+          if (-not $launchExe) { throw "Launch.exe was not produced by the build." }
+          echo "app_dir=$($launchExe.DirectoryName)" >> $env:GITHUB_OUTPUT
+          echo "Launch.exe found at: $($launchExe.FullName)"
+          Get-ChildItem $launchExe.DirectoryName
+
+      - name: Launch the packaged app and capture a screenshot
+        shell: powershell
+        run: |
+          $appDir = "${{ steps.locate.outputs.app_dir }}"
+          $proc = Start-Process -FilePath "$appDir\Launch.exe" -PassThru
+          Start-Sleep -Seconds 6
+
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+
+          $stillRunning = -not $proc.HasExited
+          "Launch.exe still running after 6s: $stillRunning" | Out-File launch_status.txt
+          Get-Process -Id $proc.Id -ErrorAction SilentlyContinue | Format-List * | Out-File -Append launch_status.txt
+
+          $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+          $bitmap.Save("$env:GITHUB_WORKSPACE\windows_launch_screenshot.png")
+
+          if (-not $stillRunning) {
+            throw "Launch.exe exited within 6 seconds of starting -- treating this as a launch failure, not capturing it as success."
+          }
+
+          Stop-Process -Id $proc.Id -Force
+
+      - name: Package the application folder as a zip
+        shell: powershell
+        run: |
+          $appDir = "${{ steps.locate.outputs.app_dir }}"
+          Compress-Archive -Path "$appDir\*" -DestinationPath "$env:GITHUB_WORKSPACE\NEXUS_Windows_x64.zip" -Force
+
+      - name: Upload Windows build/launch evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-windows-evidence
+          path: |
+            windows_launch_screenshot.png
+            launch_status.txt
+            NEXUS_Windows_x64.zip
+          if-no-files-found: error

@@ -7,10 +7,13 @@ technical assignment (Web & Software Development track).
 
 ## Status
 
-**Phase 1 of 5 — walking skeleton.** Only the API/core module and the
-Overview page are implemented. Every other module (Geometry, Thermal,
-Performance, Hardware, Neural, Validation, Documentation) is honestly
-reported as pending in the UI itself — see `/api/status`.
+Implemented and verified: **Geometry Lab**, **Thermal Analysis**,
+**Performance Lab** (plus the API/core walking skeleton and Overview page).
+Not yet implemented: Hardware Integration, Neural Computation, Validation
+pass, Documentation — all honestly reported as pending in the UI itself,
+not stubbed out silently. See `/api/status` for the live, code-driven
+source of this list (`backend/src/core/status.cpp`), which is what the
+Overview page actually renders.
 
 ## Prerequisites (source build)
 
@@ -59,6 +62,17 @@ companion planning doc (Phase 1 deliverable, shared separately).
 
 ## One-click Windows launch
 
-Not yet built — planned for Day 12 (GitHub Actions `windows-latest`
-runner + WebView2 shell). Source-build instructions above are the only
-supported path until then.
+`Launch.exe` — a native WebView2 shell (`windows/launcher/`) that spawns
+`nexus_server.exe` and displays the built frontend, no terminal/admin/
+internet/install step required on a clean Windows 11 machine. Built and
+verified on a real `windows-latest` GitHub Actions runner
+(`.github/workflows/windows-build.yml`). Full packaging details, the
+clean-machine checklist, and the actual build/launch evidence are in
+[`docs/packaging/windows.md`](docs/packaging/windows.md).
+
+## Editor-based run (VS Code / Antigravity)
+
+`.vscode/tasks.json` and `.vscode/launch.json` provide one-click build/run/
+debug tasks for the backend and frontend from inside the editor — see
+[`docs/packaging/windows.md`](docs/packaging/windows.md#editor-based-source-build-vs-code-or-antigravity)
+for the extension prerequisites. This path is independent of `Launch.exe`.

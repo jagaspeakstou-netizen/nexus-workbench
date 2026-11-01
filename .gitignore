@@ -1,5 +1,7 @@
 # Backend
 backend/build/
+backend/webview2_packages/
+**/webview2_user_data/
 
 # Frontend
 frontend/node_modules/

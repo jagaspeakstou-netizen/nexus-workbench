@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "NEXUS: Debug backend (nexus_server)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/build/nexus_server",
+      "windows": {
+        "program": "${workspaceFolder}/backend/build/Release/nexus_server.exe",
+        "type": "cppvsdbg"
+      },
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/backend/build",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "preLaunchTask": "NEXUS: Build backend"
+    }
+  ]
+}

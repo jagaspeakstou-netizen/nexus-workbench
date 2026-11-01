@@ -45,12 +45,24 @@ target_link_libraries(nexus_thermal_export PRIVATE nexus_core)
 add_executable(nexus_performance_export src/performance/export_main.cpp)
 target_link_libraries(nexus_performance_export PRIVATE nexus_core)
 
+# Windows one-click packaging (Launch.exe): a WebView2 shell that spawns
+# nexus_server.exe and displays the built frontend. Only configured when
+# actually targeting Windows -- this dev container is Linux, so this
+# subdirectory is never entered here, and the rest of the build above is
+# completely unaffected by it. See windows/launcher/CMakeLists.txt and
+# docs/packaging/windows.md.
+if(WIN32)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../windows/launcher ${CMAKE_BINARY_DIR}/windows_launcher)
+endif()
+
 # Tests (optional - only built if GoogleTest is available).
 # Prefer a system/vcpkg-provided GoogleTest (find_package) over downloading
 # the source at configure time: CI runners and the Windows build both have
-# gflaky/blocked network access to raw source archives, so FetchContent is
-# a fragile default here. See docs/architecture for the vcpkg manifest used
-# on the Windows CI runner (Day 12).
+# flaky/blocked network access to raw source archives, so FetchContent is
+# a fragile default here. On Linux this comes from apt (libgtest-dev); on
+# the Windows CI runner it comes from vcpkg manifest mode (backend/vcpkg.json
+# + VCPKG_INSTALLATION_ROOT, which GitHub's windows-latest image ships
+# pre-installed) -- see .github/workflows/windows-build.yml.
 option(NEXUS_BUILD_TESTS "Build unit tests" ON)
 if(NEXUS_BUILD_TESTS)
   find_package(GTest QUIET)
