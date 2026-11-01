@@ -15,24 +15,63 @@ requirement that they not depend on each other:
 
 ## How the evidence in this document was produced
 
-**Status: in progress — first real CI run surfaced a genuine, disclosed
-build issue, now fixed; awaiting the next run's result.**
+**Status: VERIFIED on a real windows-latest GitHub Actions runner.**
 
-Run #1 (2026-11-01,
-[workflow run 41338201277](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338201277))
-on a real `windows-latest` GitHub Actions runner: vcpkg manifest mode
-correctly detected the MSVC compiler and built GoogleTest 1.18.0 from
-source in 1.2 minutes (real, unedited log output). CMake configure then
-failed: `could not find any instance of Visual Studio` against the
-hardcoded generator `"Visual Studio 17 2022"` — the same log's own
-compiler-detection step had just reported the installed toolset under
-`.../Visual Studio/18/Enterprise/...`, meaning that runner image's Visual
-Studio major version had moved past what the generator string named.
-Fixed by removing the hardcoded `-G` and letting CMake auto-select the
-installed Visual Studio generator (`-A x64` kept explicit, since the
-default platform for a VS generator is Win32). This is left here as the
-disclosed first attempt + fix, not edited out, per this project's rule
-against hiding real debugging history.
+- Repository:
+  [github.com/jagaspeakstou-netizen/nexus-workbench](https://github.com/jagaspeakstou-netizen/nexus-workbench)
+- **Run #1** (2026-11-01,
+  [run 41338201277](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338201277)) —
+  **failed**, and the failure itself is genuine, disclosed evidence, not
+  hidden. vcpkg manifest mode correctly detected the MSVC compiler and
+  built GoogleTest 1.18.0 from source in 1.2 minutes (real, unedited log
+  output). CMake configure then failed: `could not find any instance of
+  Visual Studio` against the hardcoded generator `"Visual Studio 17
+  2022"` — the same log's own compiler-detection step had just reported
+  the installed toolset under `.../Visual Studio/18/Enterprise/...`,
+  meaning that runner image's Visual Studio major version had moved past
+  what the generator string named. Fixed by removing the hardcoded `-G`
+  and letting CMake auto-select the installed generator (`-A x64` kept
+  explicit, since a VS generator's default platform is Win32).
+- **Run #2** (2026-11-01,
+  [run 41338521566](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338521566)) —
+  **passed, every step**, after that one-line fix. What that run's own
+  log actually shows:
+  - CMake configured against **MSVC 19.51.36260.0** (Visual Studio 18
+    Enterprise), vcpkg manifest mode installed `gtest:x64-windows@1.18.0`.
+  - `cmake --build` produced `Launch.exe` (159,232 bytes) and
+    `nexus_server.exe` (420,352 bytes), with the built `frontend/`
+    directory copied alongside — exactly the relocatable folder layout
+    this document describes below. The CMake configure log shows
+    `Using statically-linked WebView2 loader` (the
+    `WebView2LoaderStatic.lib` path in `windows/launcher/CMakeLists.txt`
+    was taken, so there's no `WebView2Loader.dll` to bundle on this SDK
+    version — confirmed by the build output directory listing containing
+    only `Launch.exe`, `nexus_server.exe`, and `frontend/`).
+  - `ctest` on that Windows build: **43/43 tests passed (100%)**, 0.71s
+    total — the same `nexus_tests` suite that runs on Linux, now run and
+    passing on real Windows.
+  - The runner then ran `Start-Process Launch.exe`, waited 6 seconds, and
+    checked `-not $proc.HasExited` — the workflow step is written to
+    `throw` (failing the job) if the process had already exited by then;
+    it did not, so **`Launch.exe` was still running 6 seconds after
+    launch on a clean GitHub-hosted Windows 11 runner**. It then took a
+    full-screen screenshot, confirmed the process was still alive a
+    second time, and force-stopped it (clean shutdown, not a crash).
+  - Artifacts uploaded by that run (`nexus-windows-evidence`):
+    `windows_launch_screenshot.png`, `launch_status.txt` (the raw
+    `Get-Process` output at screenshot time), and `NEXUS_Windows_x64.zip`
+    (the exact packaged folder — downloadable and independently testable
+    on any Windows 11 machine from the run's
+    [Artifacts section](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338521566)).
+
+**One disclosed gap:** this project's own sandboxed environment could not
+download the artifact `.zip`/`.png` binaries itself (its network egress
+policy blocks the Azure Blob Storage host GitHub's artifact download uses)
+— only the run's text logs, which is everything quoted above. The
+screenshot's *existence* and the launch step's pass/fail gate are
+independently verified from the log; its visual *contents* have not been
+looked at by this project directly and should be pulled from the
+Artifacts link above before relying on it as interview evidence.
 
 This document, the launcher source
 (`windows/launcher/Launcher.cpp`), the CMake target
