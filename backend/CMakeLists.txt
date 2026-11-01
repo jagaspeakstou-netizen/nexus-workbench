@@ -14,6 +14,8 @@ find_package(Threads REQUIRED)
 add_library(nexus_core
   src/core/status.cpp
   src/thermal/thermal.cpp
+  src/geometry/stl_parser.cpp
+  src/geometry/csv_parser.cpp
 )
 target_include_directories(nexus_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -42,6 +44,7 @@ if(NEXUS_BUILD_TESTS)
     add_executable(nexus_tests
       tests/test_status.cpp
       tests/test_thermal.cpp
+      tests/test_geometry.cpp
     )
     target_link_libraries(nexus_tests PRIVATE nexus_core GTest::gtest_main)
     include(GoogleTest)

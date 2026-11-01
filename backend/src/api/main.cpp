@@ -12,8 +12,11 @@
 
 #include <httplib.h>
 #include <nlohmann/json.hpp>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 
+#include "nexus/geometry.hpp"
 #include "nexus/status.hpp"
 #include "nexus/thermal.hpp"
 
@@ -55,6 +58,77 @@ json thermal_result_to_json(const nexus::thermal::SolveResult& r) {
         {"min_temperature_C", r.min_temperature},
         {"max_temperature_C", r.max_temperature},
     };
+}
+
+json stl_result_to_json(const nexus::geometry::StlParseResult& r) {
+    if (!r.valid) {
+        return json{{"valid", false}, {"error", r.error}};
+    }
+    json triangles = json::array();
+    for (const auto& t : r.triangles) {
+        triangles.push_back({
+            {"normal", {t.normal.x, t.normal.y, t.normal.z}},
+            {"v0", {t.v0.x, t.v0.y, t.v0.z}},
+            {"v1", {t.v1.x, t.v1.y, t.v1.z}},
+            {"v2", {t.v2.x, t.v2.y, t.v2.z}},
+        });
+    }
+    return json{
+        {"valid", true},
+        {"solid_name", r.solid_name},
+        {"triangle_count", r.triangles.size()},
+        {"bounding_box", {
+            {"min", {r.bbox.min.x, r.bbox.min.y, r.bbox.min.z}},
+            {"max", {r.bbox.max.x, r.bbox.max.y, r.bbox.max.z}},
+        }},
+        {"triangles", triangles},
+    };
+}
+
+json csv_result_to_json(const nexus::geometry::CsvParseResult& r) {
+    if (!r.valid) {
+        return json{{"valid", false}, {"error", r.error}};
+    }
+    json nodes = json::array();
+    for (const auto& n : r.nodes) {
+        nodes.push_back({
+            {"node_id", n.node_id},
+            {"x_m", n.x},
+            {"y_m", n.y},
+            {"z_m", n.z},
+            {"temperature_C", n.temperature},
+        });
+    }
+    return json{
+        {"valid", true},
+        {"node_count", r.nodes.size()},
+        {"min_temperature_C", r.min_temperature},
+        {"max_temperature_C", r.max_temperature},
+        {"avg_temperature_C", r.avg_temperature},
+        {"nodes", nodes},
+    };
+}
+
+// Sample data files are looked up relative to a few likely working
+// directories so the server behaves the same whether it's launched from
+// backend/build (typical local dev) or the repo root (e.g. from a
+// packaged launcher). Returns std::nullopt if none of the candidates
+// exist -- callers turn that into a clear 404, not a crash.
+std::optional<std::string> read_sample_file(const std::string& relative_name) {
+    const std::vector<std::string> candidates = {
+        "../../data/geometry/" + relative_name,
+        "../data/geometry/" + relative_name,
+        "data/geometry/" + relative_name,
+    };
+    for (const auto& path : candidates) {
+        std::ifstream in(path, std::ios::binary);
+        if (in) {
+            std::ostringstream ss;
+            ss << in.rdbuf();
+            return ss.str();
+        }
+    }
+    return std::nullopt;
 }
 
 }  // namespace
@@ -131,6 +205,36 @@ int main(int argc, char** argv) {
             }},
         };
         res.set_content(body.dump(), "application/json");
+    });
+
+    server.Post("/api/geometry/stl/parse", [](const httplib::Request& req, httplib::Response& res) {
+        const auto result = nexus::geometry::parse_ascii_stl(req.body);
+        res.set_content(stl_result_to_json(result).dump(), "application/json");
+    });
+
+    server.Post("/api/geometry/csv/parse", [](const httplib::Request& req, httplib::Response& res) {
+        const auto result = nexus::geometry::parse_ansys_csv(req.body);
+        res.set_content(csv_result_to_json(result).dump(), "application/json");
+    });
+
+    server.Get("/api/geometry/sample/stl", [](const httplib::Request&, httplib::Response& res) {
+        const auto content = read_sample_file("sample_tetrahedron.stl");
+        if (!content) {
+            res.status = 404;
+            res.set_content(json{{"error", "Sample STL file not found on server."}}.dump(), "application/json");
+            return;
+        }
+        res.set_content(*content, "text/plain");
+    });
+
+    server.Get("/api/geometry/sample/csv", [](const httplib::Request&, httplib::Response& res) {
+        const auto content = read_sample_file("ansys_nodal_temperatures_synthetic.csv");
+        if (!content) {
+            res.status = 404;
+            res.set_content(json{{"error", "Sample CSV file not found on server."}}.dump(), "application/json");
+            return;
+        }
+        res.set_content(*content, "text/plain");
     });
 
     std::cout << "NEXUS backend listening on http://127.0.0.1:" << port << "\n";
