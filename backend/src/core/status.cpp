@@ -6,7 +6,7 @@ std::vector<ModuleStatus> get_module_statuses() {
     return {
         {"geometry",    "Geometry Lab",          true,  true,  "ASCII STL + ANSYS CSV parsers with validation, verified"},
         {"thermal",     "Thermal Analysis",      true,  true,  "1D steady-state FEA solver, N=10/20/40/80 convergence verified"},
-        {"performance", "Performance Lab",       false, false, "Pending - Day 8"},
+        {"performance", "Performance Lab",       true,  true,  "Multicore batch solve, workers capped to hardware, speedup/agreement verified"},
         {"hardware",    "Hardware Integration",  false, false, "Pending - Day 10"},
         {"neural",      "Neural Computation",    false, false, "Pending - Day 9"},
         {"validation",  "Validation & Tests",    false, false, "Pending - Day 11"},

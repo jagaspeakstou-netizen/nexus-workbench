@@ -1,0 +1,13 @@
+field,value
+cpu_model,"Intel(R) Xeon(R) Processor @ 2.10GHz"
+logical_cores,2
+physical_cores_estimate,2
+physical_cores_is_estimate,true
+ram_mb,8027
+compiler,"GCC 13.3.0"
+build_type,Release
+optimization_flags," -O3 -DNDEBUG"
+max_abs_agreement_error_C,0
+case_count,4000
+mesh_elements,200
+seed,42

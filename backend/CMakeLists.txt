@@ -16,6 +16,8 @@ add_library(nexus_core
   src/thermal/thermal.cpp
   src/geometry/stl_parser.cpp
   src/geometry/csv_parser.cpp
+  src/performance/performance.cpp
+  src/performance/hardware.cpp
 )
 target_include_directories(nexus_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -24,11 +26,24 @@ target_include_directories(nexus_core PUBLIC
 )
 target_link_libraries(nexus_core PUBLIC Threads::Threads)
 
+# Lets src/performance/hardware.cpp report the *actual* build type and
+# flags it was compiled with, rather than a hardcoded guess -- part of
+# the Performance module's "never fabricate... report optimization
+# flags" requirement.
+string(TOUPPER "${CMAKE_BUILD_TYPE}" NEXUS_BUILD_TYPE_UPPER)
+target_compile_definitions(nexus_core PRIVATE
+  NEXUS_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
+  NEXUS_CXX_FLAGS="${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${NEXUS_BUILD_TYPE_UPPER}}"
+)
+
 add_executable(nexus_server src/api/main.cpp)
 target_link_libraries(nexus_server PRIVATE nexus_core)
 
 add_executable(nexus_thermal_export src/thermal/export_main.cpp)
 target_link_libraries(nexus_thermal_export PRIVATE nexus_core)
+
+add_executable(nexus_performance_export src/performance/export_main.cpp)
+target_link_libraries(nexus_performance_export PRIVATE nexus_core)
 
 # Tests (optional - only built if GoogleTest is available).
 # Prefer a system/vcpkg-provided GoogleTest (find_package) over downloading
@@ -45,6 +60,7 @@ if(NEXUS_BUILD_TESTS)
       tests/test_status.cpp
       tests/test_thermal.cpp
       tests/test_geometry.cpp
+      tests/test_performance.cpp
     )
     target_link_libraries(nexus_tests PRIVATE nexus_core GTest::gtest_main)
     include(GoogleTest)

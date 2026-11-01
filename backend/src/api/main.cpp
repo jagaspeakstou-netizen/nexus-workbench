@@ -17,6 +17,7 @@
 #include <sstream>
 
 #include "nexus/geometry.hpp"
+#include "nexus/performance.hpp"
 #include "nexus/status.hpp"
 #include "nexus/thermal.hpp"
 
@@ -106,6 +107,43 @@ json csv_result_to_json(const nexus::geometry::CsvParseResult& r) {
         {"max_temperature_C", r.max_temperature},
         {"avg_temperature_C", r.avg_temperature},
         {"nodes", nodes},
+    };
+}
+
+json performance_report_to_json(const nexus::performance::BenchmarkReport& r) {
+    json entries = json::array();
+    for (const auto& e : r.entries) {
+        entries.push_back({
+            {"num_workers", e.num_workers},
+            {"rep_times_seconds", e.rep_times_seconds},
+            {"median_seconds", e.median_seconds},
+            {"speedup", e.speedup},
+            {"efficiency", e.efficiency},
+        });
+    }
+    return json{
+        {"config", {
+            {"seed", r.config.seed},
+            {"case_count", r.config.case_count},
+            {"mesh_elements", r.config.mesh_elements},
+            {"k_min", r.config.k_min}, {"k_max", r.config.k_max},
+            {"q_min", r.config.q_min}, {"q_max", r.config.q_max},
+            {"repetitions", r.config.repetitions},
+        }},
+        {"hardware", {
+            {"cpu_model", r.hardware.cpu_model},
+            {"logical_cores", r.hardware.logical_cores},
+            {"physical_cores", r.hardware.physical_cores},
+            {"physical_cores_is_estimate", r.hardware.physical_cores_is_estimate},
+            {"ram_mb", r.hardware.ram_mb},
+            {"compiler", r.hardware.compiler},
+            {"build_type", r.hardware.build_type},
+            {"optimization_flags", r.hardware.optimization_flags},
+        }},
+        {"entries", entries},
+        {"max_abs_agreement_error_C", r.max_abs_agreement_error_C},
+        {"warmup_note", r.warmup_note},
+        {"launch_to_ready_note", r.launch_to_ready_note},
     };
 }
 
@@ -235,6 +273,20 @@ int main(int argc, char** argv) {
             return;
         }
         res.set_content(*content, "text/plain");
+    });
+
+    server.Get("/api/performance/benchmark", [](const httplib::Request&, httplib::Response& res) {
+        // A lighter configuration than the CLI's default (see
+        // nexus_performance_export) so a live HTTP request stays fast;
+        // same solver, same validation, just fewer cases/repetitions.
+        nexus::performance::BenchmarkConfig config;
+        config.case_count = 1200;
+        config.mesh_elements = 100;
+        config.repetitions = 5;
+        config.worker_counts = {1, 2, 3, 4};
+
+        const auto report = nexus::performance::run_full_benchmark(config);
+        res.set_content(performance_report_to_json(report).dump(), "application/json");
     });
 
     std::cout << "NEXUS backend listening on http://127.0.0.1:" << port << "\n";
