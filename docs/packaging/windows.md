@@ -15,7 +15,26 @@ requirement that they not depend on each other:
 
 ## How the evidence in this document was produced
 
-**Status: pending first CI run.** This document, the launcher source
+**Status: in progress — first real CI run surfaced a genuine, disclosed
+build issue, now fixed; awaiting the next run's result.**
+
+Run #1 (2026-11-01,
+[workflow run 41338201277](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338201277))
+on a real `windows-latest` GitHub Actions runner: vcpkg manifest mode
+correctly detected the MSVC compiler and built GoogleTest 1.18.0 from
+source in 1.2 minutes (real, unedited log output). CMake configure then
+failed: `could not find any instance of Visual Studio` against the
+hardcoded generator `"Visual Studio 17 2022"` — the same log's own
+compiler-detection step had just reported the installed toolset under
+`.../Visual Studio/18/Enterprise/...`, meaning that runner image's Visual
+Studio major version had moved past what the generator string named.
+Fixed by removing the hardcoded `-G` and letting CMake auto-select the
+installed Visual Studio generator (`-A x64` kept explicit, since the
+default platform for a VS generator is Win32). This is left here as the
+disclosed first attempt + fix, not edited out, per this project's rule
+against hiding real debugging history.
+
+This document, the launcher source
 (`windows/launcher/Launcher.cpp`), the CMake target
 (`windows/launcher/CMakeLists.txt`), and the CI workflow
 (`.github/workflows/windows-build.yml`) were all authored on this project's
