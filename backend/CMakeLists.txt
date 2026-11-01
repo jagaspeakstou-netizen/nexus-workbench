@@ -13,6 +13,7 @@ find_package(Threads REQUIRED)
 
 add_library(nexus_core
   src/core/status.cpp
+  src/thermal/thermal.cpp
 )
 target_include_directories(nexus_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -23,6 +24,9 @@ target_link_libraries(nexus_core PUBLIC Threads::Threads)
 
 add_executable(nexus_server src/api/main.cpp)
 target_link_libraries(nexus_server PRIVATE nexus_core)
+
+add_executable(nexus_thermal_export src/thermal/export_main.cpp)
+target_link_libraries(nexus_thermal_export PRIVATE nexus_core)
 
 # Tests (optional - only built if GoogleTest is available).
 # Prefer a system/vcpkg-provided GoogleTest (find_package) over downloading
@@ -35,7 +39,10 @@ if(NEXUS_BUILD_TESTS)
   find_package(GTest QUIET)
   if(GTest_FOUND)
     enable_testing()
-    add_executable(nexus_tests tests/test_status.cpp)
+    add_executable(nexus_tests
+      tests/test_status.cpp
+      tests/test_thermal.cpp
+    )
     target_link_libraries(nexus_tests PRIVATE nexus_core GTest::gtest_main)
     include(GoogleTest)
     gtest_discover_tests(nexus_tests)
