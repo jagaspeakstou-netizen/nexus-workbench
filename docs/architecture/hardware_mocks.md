@@ -29,6 +29,30 @@ cases exercise the actual logic (retry counts, dropout/recovery
 bookkeeping, determinism, pin table completeness), not placeholder
 assertions.
 
+## A real, disclosed Windows-only build failure
+
+This module's first Windows CI run
+([workflow run 41340305150](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41340305150))
+failed to compile with a wall of MSVC syntax errors starting at
+`hardware_mocks.hpp(38,17): error C2236: unexpected token 'struct'` — on
+`std::string interface;`, a line that compiles cleanly under GCC/Clang on
+Linux and had been passing locally the whole time. The cause: Windows'
+`<combaseapi.h>` (pulled in transitively by the Windows SDK headers MSVC
+includes) `#define`s `interface` to `struct`, a decades-old convention
+from COM programming. A struct member literally named `interface`
+silently becomes `struct struct;` under that macro — no warning, just a
+cascade of confusing downstream parse errors (which is exactly what the
+log showed, dozens of errors from one bad identifier).
+
+Fixed by renaming the field to `connection_interface` (`DeviceDescriptor`
+in `hardware_mocks.hpp`, with matching updates in `export_main.cpp` and
+the JSON serialization in `main.cpp` — the JSON *key* stays `"interface"`
+for the frontend, only the C++ identifier changed). Left here, not edited
+out, per this project's rule against hiding real debugging history: it's
+a genuine example of code that only fails on the target platform the
+assignment actually cares about, caught by actually building there rather
+than assumed to be fine because it built on Linux.
+
 ## Why "simulated" instead of randomized
 
 A naive mock might use real randomness (`std::random_device`, wall-clock

@@ -35,7 +35,14 @@ struct DeviceDescriptor {
     DeviceType type;
     std::string vendor;     // clearly fictional/generic, e.g. "Mock Semiconductor Co."
     std::string label;      // e.g. "8-bit AVR-class MCU (simulated)"
-    std::string interface;  // e.g. "UART (simulated, mock-COM3)"
+    // Named connection_interface, not `interface` -- on Windows,
+    // <combaseapi.h> (pulled in transitively by the Windows SDK headers)
+    // #defines `interface` to `struct` for COM programming, which silently
+    // breaks a member named `interface` under MSVC specifically (it parses
+    // fine with GCC/Clang, which is exactly what made this a real,
+    // disclosed Windows-only build failure the first time this module was
+    // built on real Windows CI -- see docs/architecture/hardware_mocks.md).
+    std::string connection_interface;  // e.g. "UART (simulated, mock-COM3)"
 };
 
 // The fixed catalog of mock devices this adapter type exposes. Pure

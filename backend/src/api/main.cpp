@@ -207,7 +207,7 @@ json hw_device_to_json(const nexus::hardware::DeviceDescriptor& d) {
         {"type", nexus::hardware::to_string(d.type)},
         {"vendor", d.vendor},
         {"label", d.label},
-        {"interface", d.interface},
+        {"interface", d.connection_interface},
     };
 }
 

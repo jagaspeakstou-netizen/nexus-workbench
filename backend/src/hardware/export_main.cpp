@@ -18,7 +18,8 @@ void run_device_type(nexus::hardware::DeviceType type, const std::string& output
     std::printf("== %s: %zu mock device(s) discovered ==\n", to_string(type).c_str(), devices.size());
 
     for (const auto& device : devices) {
-        std::printf("  %s (%s) via %s\n", device.id.c_str(), device.label.c_str(), device.interface.c_str());
+        std::printf("  %s (%s) via %s\n", device.id.c_str(), device.label.c_str(),
+                     device.connection_interface.c_str());
         auto session = connect(device);
         std::printf("    connect: %s after %zu attempt(s)\n",
                      session.connected ? "OK" : "FAILED", session.attempts.size());
