@@ -157,7 +157,7 @@ This dev environment is Linux; Windows behavior is verified only via
 | — | `dec8171` | Failed | `interface`/COM macro collision (§2.5) |
 | — | `11138f1` | Passed | 60/60 tests, fix verified |
 | [41373581581](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41373581581) | `01a865e` | Passed | 63/63 tests, incl. new `BatchRun.RejectsInvalidWorkerCount` — confirmed via `gh run view --log`, not the checkmark alone |
-| [41383120271](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41383120271) | `f621e83` | Passed; window blank | 63/63 tests. `CoInitializeEx` fixed the error dialog, but the screenshot shows a blank window (`file://` cannot load the Vite bundle). Fixed by serving the SPA over HTTP; CI now checks rendered pixels. Re-verification pending. [`AI_USE_LOG.md`](AI_USE_LOG.md) |
+| [41383120271](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41383120271) | `f621e83` | Passed; window blank | 63/63 tests. `CoInitializeEx` fixed the error dialog, but the screenshot shows a blank window (`file://` cannot load the Vite bundle). Fixed by serving the SPA over HTTP; CI now checks rendered pixels. Run [41386336629](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41386336629) passes the new gates; screenshot check pending. [`AI_USE_LOG.md`](AI_USE_LOG.md) |
 
 
 ## 7. End-to-end UI verification

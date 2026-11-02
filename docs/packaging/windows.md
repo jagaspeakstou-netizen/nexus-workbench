@@ -114,8 +114,8 @@ override) and `Launcher.cpp` navigates to `http://127.0.0.1:8787/`.
 Tested locally: `/`, the JS asset and `/api/status` all return 200.
 CI now also fails the launch step unless the SPA is served over HTTP
 **and** the window's pixels are not near-white (a check on the rendered
-content itself, not just titles). Not claimed fixed until a fresh run
-passes those gates and its screenshot is looked at.
+content itself, not just titles). Run [41386336629](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41386336629) passed those gates: SPA served (True), window
+99.8% non-white. Still not called verified until its screenshot is looked at.
 
 - Repository:
   [github.com/jagaspeakstou-netizen/nexus-workbench](https://github.com/jagaspeakstou-netizen/nexus-workbench)
