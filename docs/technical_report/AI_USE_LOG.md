@@ -236,10 +236,20 @@ single confident paragraph.
 
 Full detail: [`docs/packaging/windows.md`](../packaging/windows.md).
 
-**Status:** fix pushed; re-verification pending a fresh CI run with its
-screenshot personally inspected before any "VERIFIED" claim is restored
-anywhere in this project's docs — the same discipline that was missing
-at the start of this whole investigation.
+**Status:** fix pushed and confirmed by run
+[41383120271](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41383120271)
+(2026-11-02) — its text log shows the real application window title
+("NEXUS Engineering Intelligence Workbench"), `Startup error dialog
+detected (substring match): False`, no `launcher_error.log` produced,
+and `100% tests passed out of 63`. The one remaining caveat: this
+project's sandboxed environment still cannot download that run's
+`windows_launch_screenshot.png` binary itself (Azure Blob Storage is
+blocked here, as throughout this whole investigation), so — unlike the
+two prior, wrong "VERIFIED" claims, which were never checked against
+anything at all — this one is backed by the run's real text log but
+not yet by a personal look at the screenshot pixels. See
+[`docs/packaging/windows.md`](../packaging/windows.md) for the full
+evidence and that caveat.
 
 ## What this log does not claim
 

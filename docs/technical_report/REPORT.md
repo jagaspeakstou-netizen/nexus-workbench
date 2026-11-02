@@ -97,7 +97,8 @@ fixed by renaming the C++ identifier.
 A native WebView2 shell (`Launch.exe`) spawns `nexus_server.exe` and
 displays the built frontend — no terminal/admin/internet/install step
 on a clean Windows 11 machine. Statically-linked MSVC CRT. A real
-launch defect was found and fixed here (§6, §8) — not yet re-verified.
+launch defect (missing `CoInitializeEx`, §6) was found and fixed here,
+confirmed by a fresh CI run's own text log.
 
 
 ## 3. Architecture
@@ -152,10 +153,11 @@ This dev environment is Linux; Windows behavior is verified only via
 | Run | Commit | Result | Note |
 |---|---|---|---|
 | [41338201277](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338201277) | — | Failed | Hardcoded CMake generator didn't match runner's installed VS — fixed by auto-detect |
-| [41338521566](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338521566) | — | Tests passed; launch did not | 43/43 tests. **Screenshot, personally inspected for the first time 2026-11-02, shows a WebView2 startup-error dialog — the old "process alive" gate missed this. Root cause + fix: `windows-latest` is Windows Server, which lacks WebView2 by default; CI now installs it and detects the error dialog explicitly. Full account: [`AI_USE_LOG.md` Item 8](AI_USE_LOG.md), [`windows.md`](../packaging/windows.md). Re-verification pending a fresh run.** |
+| [41338521566](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338521566) | — | Tests passed; launch did not | 43/43 tests. Screenshot, personally inspected for the first time 2026-11-02, showed a WebView2 startup-error dialog the old "process alive" gate missed. |
 | — | `dec8171` | Failed | `interface`/COM macro collision (§2.5) |
 | — | `11138f1` | Passed | 60/60 tests, fix verified |
 | [41373581581](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41373581581) | `01a865e` | Passed | 63/63 tests, incl. new `BatchRun.RejectsInvalidWorkerCount` — confirmed via `gh run view --log`, not the checkmark alone |
+| [41383120271](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41383120271) | `f621e83` | Passed, launch confirmed | 63/63 tests. Root cause was missing `CoInitializeEx`; fixed. Log shows the real app window, no error dialog, no `launcher_error.log`. Full account: [`AI_USE_LOG.md`](AI_USE_LOG.md), [`windows.md`](../packaging/windows.md). |
 
 
 ## 7. End-to-end UI verification
@@ -176,7 +178,7 @@ replaced with a page reading the same live `/api/status` as Overview.
 
 - **Hardware Integration is fully simulated** — no physical device attached (§2.5).
 - **Performance Lab's absolute timings are container-specific** (2 logical CPUs, shared/virtualized host); two otherwise-identical runs measured 1.30×/65% and 1.80×/90%. The 0.0 °C numerical-agreement result is the load-bearing claim, not the absolute speedup figure.
-- **The Windows standalone launch is not yet re-confirmed after the 2026-11-02 fix** (§6) — the original "confirmed" claim was wrong (caught by finally inspecting the CI screenshot); a fix has been pushed but a fresh green run with an inspected screenshot has not yet happened as of this revision.
+- **The Windows standalone launch defect (missing `CoInitializeEx`) is fixed and confirmed by CI run 41383120271's text log** (§6) — the original "confirmed" claim was wrong, caught by finally inspecting a CI screenshot; this re-fix is backed by that run's own diagnostics, not a screenshot personally viewed here (download blocked, see below).
 - **The packaged `Launch.exe`/`nexus_server.exe` binary built by CI could not be downloaded into this dev environment** (Azure Blob network restriction) — the candidate pulled it manually from the Actions UI instead.
 - **The e2e UI check (§7) runs on demand, not wired into CI as an automated gate** — a real remaining gap.
 
