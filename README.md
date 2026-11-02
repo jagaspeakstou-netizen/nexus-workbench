@@ -26,10 +26,11 @@ and third-party license disclosure: [`docs/OWNERSHIP.md`](docs/OWNERSHIP.md),
 (`backend/src/core/status.cpp`), which is what the Overview page
 actually renders.
 
-**Known packaging gap:** CI (`windows-build.yml`) proves `Launch.exe`
-builds and launches cleanly on a real `windows-latest` runner, but the
-built binary has not been downloaded into this submission's ZIP — the
-candidate must pull it from the Actions UI before the ZIP is final.
+**Known packaging gap:** CI (`windows-build.yml`) builds `Launch.exe` on a real
+`windows-latest` runner and checks that the window opens, the SPA is served and
+the window is not blank (see `docs/packaging/windows.md` for the defects this
+caught). The built binary cannot be downloaded into the dev environment, so the
+candidate adds it to the ZIP via `scripts/make_submission_zip.sh -a`.
 
 **Hardware Integration caveat:** no physical microcontroller, FPGA, or
 JTAG probe is attached to this project. That module is a deterministic
