@@ -1,0 +1,187 @@
+Test project /root/nexus-workbench/backend/build
+      Start  3: ThermalExactSolution.MatchesBriefFormulaAtSampleX
+ 1/10 Test  #3: ThermalExactSolution.MatchesBriefFormulaAtSampleX .................   Passed    0.00 sec
+      Start  4: ThermalExactSolution.SatisfiesBoundaryConditions
+ 2/10 Test  #4: ThermalExactSolution.SatisfiesBoundaryConditions ..................   Passed    0.00 sec
+      Start  5: ThermalSolve.RejectsInvalidMesh
+ 3/10 Test  #5: ThermalSolve.RejectsInvalidMesh ...................................   Passed    0.00 sec
+      Start  6: ThermalSolve.HandlesMinimumValidMeshOfOneElement
+ 4/10 Test  #6: ThermalSolve.HandlesMinimumValidMeshOfOneElement ..................   Passed    0.00 sec
+      Start  7: ThermalSolve.ZeroHeatSourceProducesExactLinearProfileEverywhere
+ 5/10 Test  #7: ThermalSolve.ZeroHeatSourceProducesExactLinearProfileEverywhere ...   Passed    0.00 sec
+      Start  8: ThermalSolve.EnforcesBoundaryConditionsExactly
+ 6/10 Test  #8: ThermalSolve.EnforcesBoundaryConditionsExactly ....................   Passed    0.00 sec
+      Start  9: ThermalSolve.NodalValuesAreExactForThisConstantSourceProblem
+ 7/10 Test  #9: ThermalSolve.NodalValuesAreExactForThisConstantSourceProblem ......***Failed    0.00 sec
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = ThermalSolve.NodalValuesAreExactForThisConstantSourceProblem
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from ThermalSolve
+[ RUN      ] ThermalSolve.NodalValuesAreExactForThisConstantSourceProblem
+/root/nexus-workbench/backend/tests/test_thermal.cpp:105: Failure
+The difference between node.temperature and exact_temperature(p, node.x) is 45.000000000000028, which exceeds 1e-9, where
+node.temperature evaluates to 182.00000000000003,
+exact_temperature(p, node.x) evaluates to 137, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:105: Failure
+The difference between node.temperature and exact_temperature(p, node.x) is 80.000000000000085, which exceeds 1e-9, where
+node.temperature evaluates to 244.00000000000009,
+exact_temperature(p, node.x) evaluates to 164, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:105: Failure
+The difference between node.temperature and exact_temperature(p, node.x) is 105.00000000000006, which exceeds 1e-9, where
+node.temperature evaluates to 286.00000000000006,
+exact_temperature(p, node.x) evaluates to 181, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:105: Failure
+The difference between node.temperature and exact_temperature(p, node.x) is 120.00000000000006, which exceeds 1e-9, where
+node.temperature evaluates to 308.00000000000006,
+exact_temperature(p, node.x) evaluates to 188, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:105: Failure
+The difference between node.temperature and exact_temperature(p, node.x) is 125.00000000000006, which exceeds 1e-9, where
+node.temperature evaluates to 310.00000000000006,
+exact_temperature(p, node.x) evaluates to 185, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:105: Failure
+The difference between node.temperature and exact_temperature(p, node.x) is 120.00000000000006, which exceeds 1e-9, where
+node.temperature evaluates to 292.00000000000006,
+exact_temperature(p, node.x) evaluates to 172, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:105: Failure
+The difference between node.temperature and exact_temperature(p, node.x) is 105.00000000000003, which exceeds 1e-9, where
+node.temperature evaluates to 254.00000000000003,
+exact_temperature(p, node.x) evaluates to 149, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:105: Failure
+The difference between node.temperature and exact_temperature(p, node.x) is 80.000000000000014, which exceeds 1e-9, where
+node.temperature evaluates to 196,
+exact_temperature(p, node.x) evaluates to 115.99999999999999, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:105: Failure
+The difference between node.temperature and exact_temperature(p, node.x) is 45.000000000000014, which exceeds 1e-9, where
+node.temperature evaluates to 118.00000000000001,
+exact_temperature(p, node.x) evaluates to 73, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+[  FAILED  ] ThermalSolve.NodalValuesAreExactForThisConstantSourceProblem (0 ms)
+[----------] 1 test from ThermalSolve (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] ThermalSolve.NodalValuesAreExactForThisConstantSourceProblem
+
+ 1 FAILED TEST
+
+      Start 10: ThermalSolve.MidpointErrorMatchesClosedFormPrediction
+ 8/10 Test #10: ThermalSolve.MidpointErrorMatchesClosedFormPrediction .............***Failed    0.00 sec
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = ThermalSolve.MidpointErrorMatchesClosedFormPrediction
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from ThermalSolve
+[ RUN      ] ThermalSolve.MidpointErrorMatchesClosedFormPrediction
+/root/nexus-workbench/backend/tests/test_thermal.cpp:121: Failure
+The difference between r.max_abs_midpoint_error and expected_error is 120.00000000000006, which exceeds 1e-9, where
+r.max_abs_midpoint_error evaluates to 121.25000000000006,
+expected_error evaluates to 1.25, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:121: Failure
+The difference between r.max_abs_midpoint_error and expected_error is 123.75000000000034, which exceeds 1e-9, where
+r.max_abs_midpoint_error evaluates to 124.06250000000034,
+expected_error evaluates to 0.3125, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:121: Failure
+The difference between r.max_abs_midpoint_error and expected_error is 124.68750000000136, which exceeds 1e-9, where
+r.max_abs_midpoint_error evaluates to 124.76562500000136,
+expected_error evaluates to 0.078125, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:121: Failure
+The difference between r.max_abs_midpoint_error and expected_error is 124.92187500000171, which exceeds 1e-9, where
+r.max_abs_midpoint_error evaluates to 124.94140625000171,
+expected_error evaluates to 0.01953125, and
+1e-9 evaluates to 1.0000000000000001e-09.
+
+[  FAILED  ] ThermalSolve.MidpointErrorMatchesClosedFormPrediction (0 ms)
+[----------] 1 test from ThermalSolve (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] ThermalSolve.MidpointErrorMatchesClosedFormPrediction
+
+ 1 FAILED TEST
+
+      Start 11: ThermalSolve.MeshConvergenceHalvesErrorByFourX
+ 9/10 Test #11: ThermalSolve.MeshConvergenceHalvesErrorByFourX ....................***Failed    0.00 sec
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = ThermalSolve.MeshConvergenceHalvesErrorByFourX
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from ThermalSolve
+[ RUN      ] ThermalSolve.MeshConvergenceHalvesErrorByFourX
+/root/nexus-workbench/backend/tests/test_thermal.cpp:135: Failure
+The difference between ratio and 4.0 is 3.0226700251889191, which exceeds 0.05, where
+ratio evaluates to 0.97732997481108086,
+4.0 evaluates to 4, and
+0.05 evaluates to 0.050000000000000003.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:135: Failure
+The difference between ratio and 4.0 is 3.0056355666875474, which exceeds 0.05, where
+ratio evaluates to 0.99436443331245272,
+4.0 evaluates to 4, and
+0.05 evaluates to 0.050000000000000003.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:135: Failure
+The difference between ratio and 4.0 is 3.0014069094888258, which exceeds 0.05, where
+ratio evaluates to 0.9985930905111744,
+4.0 evaluates to 4, and
+0.05 evaluates to 0.050000000000000003.
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:139: Failure
+Expected: (results[i].max_abs_midpoint_error) < (results[i - 1].max_abs_midpoint_error), actual: 124.06250000000034 vs 121.25000000000006
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:139: Failure
+Expected: (results[i].max_abs_midpoint_error) < (results[i - 1].max_abs_midpoint_error), actual: 124.76562500000136 vs 124.06250000000034
+
+/root/nexus-workbench/backend/tests/test_thermal.cpp:139: Failure
+Expected: (results[i].max_abs_midpoint_error) < (results[i - 1].max_abs_midpoint_error), actual: 124.94140625000171 vs 124.76562500000136
+
+[  FAILED  ] ThermalSolve.MeshConvergenceHalvesErrorByFourX (0 ms)
+[----------] 1 test from ThermalSolve (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 0 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] ThermalSolve.MeshConvergenceHalvesErrorByFourX
+
+ 1 FAILED TEST
+
+      Start 12: ThermalSolve.TemperatureRangeIsPhysicallySane
+10/10 Test #12: ThermalSolve.TemperatureRangeIsPhysicallySane .....................   Passed    0.00 sec
+
+70% tests passed, 3 tests failed out of 10
+
+Total Test time (real) =   0.03 sec
+
+The following tests FAILED:
+	  9 - ThermalSolve.NodalValuesAreExactForThisConstantSourceProblem (Failed)
+	 10 - ThermalSolve.MidpointErrorMatchesClosedFormPrediction (Failed)
+	 11 - ThermalSolve.MeshConvergenceHalvesErrorByFourX (Failed)
+Errors while running CTest

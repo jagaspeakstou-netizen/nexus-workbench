@@ -95,20 +95,60 @@ rather than silently clean it up.
    this input at all until one was added alongside the fix). Fixed with
    an explicit `std::invalid_argument` guard and a new regression test.
 
-## Open item: an AI suggestion the candidate personally caught
+## Item 7: a deliberate AI challenge test (candidate-directed)
 
-The assignment brief asks for an instance where the candidate — not the
-AI — caught an incorrect AI suggestion during development. Everything in
-the section above was self-caught by Claude during generation (items 1–2)
-or caught by an actual build/test/CI run failing (items 3–6), which is
-honest but is not the same thing the brief is asking for here. This entry
-is intentionally left for the candidate to fill in from their own review
-of the session, since it has to describe something they personally
-noticed and corrected — an AI assistant cannot honestly write this entry
-on the candidate's behalf.
+Reviewing this project's actual development history turned up no
+genuine instance of the candidate personally catching a technical AI
+error during organic development — the candidate's engagement in the
+project's chat history was direction and confirmation ("do it
+perfectly", "proceed", "yes"), not line-by-line technical review, which
+is an honest fact about how this collaboration ran. Rather than invent
+a false memory of such an instance, the candidate directed a different,
+explicitly-labeled exercise: a controlled, adversarial test in which the
+AI was posed a real forward-looking engineering question about the
+Thermal module, produced a plausible-but-incorrect answer, and the
+candidate had that answer independently verified — against the
+governing equation, the closed-form analytical solution, and the real
+GoogleTest suite — before any judgment was made about whether to accept
+it.
 
-*(Candidate: fill in — what did you personally catch that Claude got
-wrong, and how did you catch it?)*
+**This is not a reconstruction of an earlier catch and is not presented
+as one.** It is recorded here as exactly what it is: a deliberate test
+designed by the candidate and carried out on an isolated git branch
+(`review/ai-challenge-thermal-fea`), never touching the committed
+implementation on `main`.
+
+**The question posed:** how to generalize the element load-vector
+formulation for per-element, piecewise-constant heat generation.
+
+**The AI's answer (verbatim):** proposed assigning the *full*
+`q_e·A·h` to each of an element's two nodes, rationalizing that halving
+is "already absorbed" by the assembled matrix summing contributions at
+shared interior nodes.
+
+**Verification outcome:** incorrect, confirmed three independent ways —
+(1) re-derivation from the governing weak-form integral (the correct
+split is `qAh/2`, matching the project's own existing derivation doc and
+the committed code), (2) an independent from-scratch Python
+re-implementation showing the proposed formulation injects exactly 2×
+the physically correct total heat and produces a 125 °C temperature
+error at the domain midpoint — with a closed-form algebraic prediction
+of that exact error matching the measured result, and (3) temporarily
+building the incorrect formulation into the real `thermal.cpp`, which
+made 3 of the module's 10 tests fail with that same ~125 °C
+discrepancy (one of them — the mesh-convergence test — failing in a
+second, independently diagnostic way: the error no longer *shrinks*
+under mesh refinement, the signature of an energy-balance bug rather
+than a discretization-accuracy one).
+
+No change was made to the committed implementation — `thermal.cpp`
+already used the correct formulation, and `git diff` against `main`
+after reverting the test patch shows zero difference.
+
+Full record (exact prompt, exact AI response, full derivation, all three
+verification methods with their raw output, and reproduction
+instructions):
+[`docs/technical_report/ai_challenge/THERMAL_LOAD_VECTOR_CHALLENGE.md`](ai_challenge/THERMAL_LOAD_VECTOR_CHALLENGE.md).
 
 ## What this log does not claim
 
