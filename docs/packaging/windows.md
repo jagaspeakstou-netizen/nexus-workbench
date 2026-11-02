@@ -13,9 +13,49 @@ requirement that they not depend on each other:
    `nexus_launcher` target (`windows/launcher/`) added automatically when
    `WIN32` is set — see the guard in `backend/CMakeLists.txt`.
 
+## A real defect found and fixed (2026-11-02)
+
+**This section is itself evidence, not a claim.** The CI run referenced
+below as "Run #2 — passed, every step" never actually had its own
+screenshot artifact inspected until the candidate personally downloaded
+and opened it on 2026-11-02 — which revealed that `Launch.exe` had in
+fact hit its own `ShowWebView2MissingError()` dialog ("NEXUS — Startup
+Error: NEXUS could not start the Microsoft Edge WebView2 component"),
+not a working application window. The CI gate at the time only checked
+`-not $proc.HasExited` ("is the process still alive"), which is true even
+when a modal error dialog is showing — its message loop keeps pumping,
+so the process is technically "responding" while the app has not
+actually started.
+
+**Root cause:** `windows-latest` GitHub Actions runners are Windows
+*Server* images (confirmed directly from that screenshot's own desktop
+watermark: "Windows Server 2025 Datacenter"), not literal Windows 11
+client. Microsoft's documented guarantee that the WebView2 Runtime ships
+pre-installed applies specifically to Windows 11 client — Windows Server
+does not include it by default, so the one OS-level dependency this
+project deliberately doesn't bundle (§ below) was simply absent on the
+machine used to "verify" it.
+
+**Fix, in two parts** (`.github/workflows/windows-build.yml`):
+1. A new step installs the WebView2 Evergreen Runtime on the runner
+   before launching — the same installer `Launch.exe`'s own error dialog
+   already points a user to. This makes the CI runner a true proxy for
+   the brief's actual target (Windows 11 x64 client) again, rather than
+   papering over the gap.
+2. The launch-verification step is hardened to explicitly detect the
+   `"NEXUS — Startup Error"` dialog window (via `FindWindow`) and fail
+   the job if it's present — closing the exact detection gap that let a
+   real failure get reported as a pass. `Stop-Process`-ing a process that
+   is merely "responding" is not the same as confirming it launched.
+
+This is disclosed here, in `docs/technical_report/AI_USE_LOG.md`, and in
+the technical report, rather than silently re-running CI and only
+keeping the "VERIFIED" claim below once it happens to go green.
+
 ## How the evidence in this document was produced
 
-**Status: VERIFIED on a real windows-latest GitHub Actions runner.**
+**Status: being re-verified after the fix above; see the AI-use log and
+the most recent entry in the CI runs table for the current state.**
 
 - Repository:
   [github.com/jagaspeakstou-netizen/nexus-workbench](https://github.com/jagaspeakstou-netizen/nexus-workbench)

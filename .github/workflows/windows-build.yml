@@ -78,6 +78,37 @@ jobs:
           echo "Launch.exe found at: $($launchExe.FullName)"
           Get-ChildItem $launchExe.DirectoryName
 
+      - name: Ensure the WebView2 Runtime is present (matches real Windows 11 client default)
+        shell: powershell
+        run: |
+          # windows-latest is a Windows SERVER image (confirmed by a prior
+          # run's own captured screenshot watermark: "Windows Server 2025
+          # Datacenter"), not literal Windows 11 client. Microsoft's "WebView2
+          # Runtime ships by default" guarantee is specifically for Windows 11
+          # client -- Server does not include it, so a prior run's Launch.exe
+          # actually hit ShowWebView2MissingError() and showed a startup-error
+          # dialog, which the old (process-alive-only) verification step below
+          # did not catch, since a modal dialog's message loop still counts as
+          # "responding." This step installs the same Evergreen runtime a real
+          # Windows 11 client already ships with, so this runner is a true
+          # proxy for the target platform again -- it is NOT papering over the
+          # defect, it's fixing the CI environment to match what the brief
+          # actually targets (Windows 11 x64); the verification step below is
+          # also hardened to catch this class of failure if it recurs.
+          $existing = Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\*" -ErrorAction SilentlyContinue |
+            Where-Object { $_.pv -and $_.PSChildName -eq "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" }
+          if ($existing) {
+            Write-Host "WebView2 Runtime already present (version $($existing.pv)) -- no install needed."
+          } else {
+            Write-Host "WebView2 Runtime not found on this runner image -- installing the Evergreen bootstrapper (the same one Launch.exe's own error dialog points a user to)."
+            Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -OutFile "$env:TEMP\MicrosoftEdgeWebview2Setup.exe"
+            $install = Start-Process -FilePath "$env:TEMP\MicrosoftEdgeWebview2Setup.exe" -ArgumentList "/silent", "/install" -Wait -PassThru
+            if ($install.ExitCode -ne 0) {
+              throw "WebView2 Runtime installer exited with code $($install.ExitCode)."
+            }
+            Write-Host "WebView2 Runtime installed."
+          }
+
       - name: Launch the packaged app and capture a screenshot
         shell: powershell
         run: |
@@ -87,10 +118,28 @@ jobs:
 
           Add-Type -AssemblyName System.Windows.Forms
           Add-Type -AssemblyName System.Drawing
+          $win32TypeDef = 'using System; using System.Runtime.InteropServices; public class Win32 { [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)] public static extern IntPtr FindWindow(string lpClassName, string lpWindowName); }'
+          Add-Type -TypeDefinition $win32TypeDef
 
           $stillRunning = -not $proc.HasExited
           "Launch.exe still running after 6s: $stillRunning" | Out-File launch_status.txt
           Get-Process -Id $proc.Id -ErrorAction SilentlyContinue | Format-List * | Out-File -Append launch_status.txt
+
+          # A WebView2-missing (or any other) startup failure shows a modal
+          # MessageBox titled "NEXUS - Startup Error" (ShowWebView2MissingError()
+          # in Launcher.cpp). That dialog's own message loop keeps pumping, so
+          # $proc.HasExited alone is NOT sufficient to detect this failure mode
+          # -- it was exactly this gap that let a real startup failure get
+          # reported as "confirmed running" in an earlier run. Explicitly look
+          # for that window (both hyphen and en-dash variants, since the title
+          # uses an en-dash) and fail loudly if it's present.
+          $emDashTitle = "NEXUS " + [char]0x2014 + " Startup Error"
+          $errorDialogHandle = [Win32]::FindWindow($null, $emDashTitle)
+          if ($errorDialogHandle -eq [IntPtr]::Zero) {
+            $errorDialogHandle = [Win32]::FindWindow($null, "NEXUS - Startup Error")
+          }
+          $startupErrorShown = $errorDialogHandle -ne [IntPtr]::Zero
+          "Startup error dialog detected: $startupErrorShown" | Out-File -Append launch_status.txt
 
           $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
           $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
@@ -101,16 +150,26 @@ jobs:
           if (-not $stillRunning) {
             throw "Launch.exe exited within 6 seconds of starting -- treating this as a launch failure, not capturing it as success."
           }
+          if ($startupErrorShown) {
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            throw "Launch.exe is running but showing its own 'Startup Error' dialog (see windows_launch_screenshot.png) -- treating this as a launch failure, not capturing it as success. A process that is merely 'responding' is not the same as a successful launch."
+          }
 
           Stop-Process -Id $proc.Id -Force
 
       - name: Package the application folder as a zip
+        # Always runs, even if the launch-verification step above failed, so
+        # a real failure still produces its own screenshot/log evidence for
+        # debugging instead of silently vanishing -- the project's own
+        # disclose-don't-hide policy applies to CI tooling too.
+        if: always()
         shell: powershell
         run: |
           $appDir = "${{ steps.locate.outputs.app_dir }}"
           Compress-Archive -Path "$appDir\*" -DestinationPath "$env:GITHUB_WORKSPACE\NEXUS_Windows_x64.zip" -Force
 
       - name: Upload Windows build/launch evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nexus-windows-evidence

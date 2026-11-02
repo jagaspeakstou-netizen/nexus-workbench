@@ -150,6 +150,51 @@ verification methods with their raw output, and reproduction
 instructions):
 [`docs/technical_report/ai_challenge/THERMAL_LOAD_VECTOR_CHALLENGE.md`](ai_challenge/THERMAL_LOAD_VECTOR_CHALLENGE.md).
 
+## Item 8: a real, organically-caught packaging defect (2026-11-02)
+
+Unlike Item 7 above (a deliberate test, explicitly because no genuine
+catch had occurred by that point), this one is a genuine, unplanned
+catch during final submission packaging — the kind of entry the brief
+originally asked for.
+
+**What happened:** `docs/packaging/windows.md` and `REPORT.md` both
+claimed, based on a CI run's process-liveness check, that `Launch.exe`
+had been "confirmed" launching successfully on a real Windows runner.
+That claim was never actually checked against the run's own screenshot
+artifact — the candidate downloaded and personally opened it for the
+first time during final verification, which revealed `Launch.exe` had
+actually hit its own `ShowWebView2MissingError()` dialog, not a working
+window. The underlying verification logic
+(`.github/workflows/windows-build.yml`'s original launch-check step,
+and the claims built on top of it in the docs) was wrong: it checked
+only `-not $proc.HasExited`, which is true even while a modal error
+dialog is showing.
+
+**How it was caught:** not by a test, not by a deliberate challenge —
+by the candidate actually opening evidence that already existed but had
+never been looked at, exactly the gap §8 of `docs/packaging/windows.md`
+and §6.1/§8 of `REPORT.md` had themselves flagged as a disclosed
+limitation ("the screenshot's visual contents were never inspected").
+
+**Root cause (confirmed):** `windows-latest` GitHub Actions runners are
+Windows Server images, not Windows 11 client — visible directly in the
+screenshot's own desktop watermark ("Windows Server 2025 Datacenter").
+Windows Server does not ship the WebView2 Runtime pre-installed the way
+Windows 11 client does, so the one dependency this project deliberately
+doesn't bundle was simply missing on the machine used to "verify" it.
+
+**Fix:** `.github/workflows/windows-build.yml` now (1) installs the
+WebView2 Evergreen Runtime on the runner before launching, so the CI
+environment is a true proxy for the brief's actual target again, and
+(2) explicitly detects the "NEXUS — Startup Error" dialog window via
+`FindWindow` and fails the job if it appears, rather than treating a
+"responding" process as proof of a successful launch. Full detail:
+[`docs/packaging/windows.md`](../packaging/windows.md).
+
+**Status:** fix pushed; re-verification pending a fresh CI run with its
+screenshot personally inspected again before any "VERIFIED" claim is
+restored anywhere in this project's docs.
+
 ## What this log does not claim
 
 - It does not claim every line of generated code was perfect on the

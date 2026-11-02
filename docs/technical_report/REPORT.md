@@ -96,11 +96,8 @@ fixed by renaming the C++ identifier.
 
 A native WebView2 shell (`Launch.exe`) spawns `nexus_server.exe` and
 displays the built frontend — no terminal/admin/internet/install step
-on a clean Windows 11 machine. Statically-linked MSVC CRT. Built and
-verified on a real `windows-latest` GitHub Actions runner (§6.1). **Known
-gap:** the actual binary produced by that runner could not be
-downloaded into this dev environment (Azure Blob Storage host is
-outside this session's network allowlist) — see §8.
+on a clean Windows 11 machine. Statically-linked MSVC CRT. A real
+launch defect was found and fixed here (§6, §8) — not yet re-verified.
 
 
 ## 3. Architecture
@@ -155,7 +152,7 @@ This dev environment is Linux; Windows behavior is verified only via
 | Run | Commit | Result | Note |
 |---|---|---|---|
 | [41338201277](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338201277) | — | Failed | Hardcoded CMake generator didn't match runner's installed VS — fixed by auto-detect |
-| [41338521566](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338521566) | — | Passed | 43/43 tests, MSVC 19.51, `Launch.exe` confirmed alive 6s post-launch, static WebView2 loader. Screenshot artifact's *existence* verified via the gate; contents never personally inspected (Azure Blob host outside this session's allowlist) |
+| [41338521566](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338521566) | — | Tests passed; launch did not | 43/43 tests. **Screenshot, personally inspected for the first time 2026-11-02, shows a WebView2 startup-error dialog — the old "process alive" gate missed this. Root cause + fix: `windows-latest` is Windows Server, which lacks WebView2 by default; CI now installs it and detects the error dialog explicitly. Full account: [`AI_USE_LOG.md` Item 8](AI_USE_LOG.md), [`windows.md`](../packaging/windows.md). Re-verification pending a fresh run.** |
 | — | `dec8171` | Failed | `interface`/COM macro collision (§2.5) |
 | — | `11138f1` | Passed | 60/60 tests, fix verified |
 | [41373581581](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41373581581) | `01a865e` | Passed | 63/63 tests, incl. new `BatchRun.RejectsInvalidWorkerCount` — confirmed via `gh run view --log`, not the checkmark alone |
@@ -179,8 +176,8 @@ replaced with a page reading the same live `/api/status` as Overview.
 
 - **Hardware Integration is fully simulated** — no physical device attached (§2.5).
 - **Performance Lab's absolute timings are container-specific** (2 logical CPUs, shared/virtualized host); two otherwise-identical runs measured 1.30×/65% and 1.80×/90%. The 0.0 °C numerical-agreement result is the load-bearing claim, not the absolute speedup figure.
-- **The Windows CI screenshot artifact's visual contents were never inspected from this environment** — only its existence and the CI pass/fail gate (§6).
-- **The packaged `Launch.exe`/`nexus_server.exe` binary built by CI could not be downloaded into this dev environment** (same Azure Blob network restriction) — it must be pulled from the Actions UI before the ZIP is finalized.
+- **The Windows standalone launch is not yet re-confirmed after the 2026-11-02 fix** (§6) — the original "confirmed" claim was wrong (caught by finally inspecting the CI screenshot); a fix has been pushed but a fresh green run with an inspected screenshot has not yet happened as of this revision.
+- **The packaged `Launch.exe`/`nexus_server.exe` binary built by CI could not be downloaded into this dev environment** (Azure Blob network restriction) — the candidate pulled it manually from the Actions UI instead.
 - **The e2e UI check (§7) runs on demand, not wired into CI as an automated gate** — a real remaining gap.
 
 
