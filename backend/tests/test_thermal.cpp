@@ -33,6 +33,53 @@ TEST(ThermalSolve, RejectsInvalidMesh) {
     EXPECT_THROW(solve(p, -5), std::invalid_argument);
 }
 
+// Day 11 validation pass: minimum-valid-mesh edge case. N=1 means exactly
+// two nodes, BOTH on the Dirichlet boundary -- there are zero free
+// (non-boundary) unknowns for the tridiagonal solver to actually solve
+// for. A Thomas-algorithm implementation that assumes at least one
+// interior unknown could crash or misbehave here; this is a genuine
+// robustness check, not a restatement of RejectsInvalidMesh above (which
+// only covers num_elements < 1, not the smallest *valid* value).
+TEST(ThermalSolve, HandlesMinimumValidMeshOfOneElement) {
+    const auto p = default_problem();
+    const auto r = solve(p, 1);
+    ASSERT_EQ(r.nodes.size(), 2u);
+    EXPECT_NEAR(r.nodes[0].temperature, p.T0, 1e-9);
+    EXPECT_NEAR(r.nodes[1].temperature, p.TL, 1e-9);
+    ASSERT_EQ(r.midpoints.size(), 1u);
+    // Even at this coarsest possible mesh, the midpoint error must match
+    // the same closed-form error(h) = q*h^2/(8k) prediction used by
+    // MidpointErrorMatchesClosedFormPrediction below -- no special-casing
+    // for the degenerate single-element mesh.
+    const double h = p.L / 1.0;
+    const double predicted_error = p.q * h * h / (8.0 * p.k);
+    EXPECT_NEAR(r.midpoints[0].abs_error, predicted_error, 1e-9);
+}
+
+// Day 11 validation pass: an orthogonal regime the midpoint closed-form
+// check doesn't exercise -- zero volumetric heat source. With q=0 the
+// exact solution degenerates to a straight line, T0 + (TL-T0)/L*x, which
+// lies exactly within this solver's linear (2-node) element space. So
+// unlike the q!=0 case (where only NODAL values are exact and midpoints
+// carry real O(h^2) interpolation error), with q=0 the FE solution should
+// be exact EVERYWHERE -- nodes and midpoints alike, at any mesh size --
+// since there's no higher-order term for a piecewise-linear basis to
+// approximate incorrectly.
+TEST(ThermalSolve, ZeroHeatSourceProducesExactLinearProfileEverywhere) {
+    ProblemDefinition p = default_problem();
+    p.q = 0.0;
+    for (int n : {1, 3, 7, 20}) {
+        const auto r = solve(p, n);
+        for (const auto& node : r.nodes) {
+            const double expected = p.T0 + (p.TL - p.T0) / p.L * node.x;
+            EXPECT_NEAR(node.temperature, expected, 1e-9) << "n=" << n << " node=" << node.index;
+        }
+        for (const auto& mp : r.midpoints) {
+            EXPECT_NEAR(mp.abs_error, 0.0, 1e-9) << "n=" << n << " element=" << mp.element_index;
+        }
+    }
+}
+
 TEST(ThermalSolve, EnforcesBoundaryConditionsExactly) {
     const auto p = default_problem();
     for (int n : {10, 20, 40, 80}) {

@@ -8,6 +8,7 @@
 #include <fstream>
 #include <random>
 #include <sstream>
+#include <stdexcept>
 #include <thread>
 
 #include "nexus/thermal.hpp"
@@ -76,6 +77,16 @@ BatchRunResult run_batch_serial(const std::vector<ThermalCase>& cases, int mesh_
 
 BatchRunResult run_batch_parallel(const std::vector<ThermalCase>& cases, int mesh_elements,
                                    int num_workers) {
+    if (num_workers < 1) {
+        // Day 11 validation pass: previously, num_workers=0 (or negative)
+        // silently spawned zero threads and returned a pre-sized but
+        // never-populated (all-default/zero) case_results vector instead
+        // of computing anything -- a genuine, unguarded edge case, not a
+        // hypothetical one. Fail loudly instead.
+        throw std::invalid_argument(
+            "run_batch_parallel: num_workers must be >= 1, got " + std::to_string(num_workers));
+    }
+
     BatchRunResult result;
     result.case_results.resize(cases.size());  // pre-sized: each worker writes to its own
                                                  // index, so final ordering is deterministic

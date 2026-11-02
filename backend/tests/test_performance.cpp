@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <stdexcept>
 #include <thread>
 #include "nexus/performance.hpp"
 
@@ -79,6 +80,21 @@ TEST(BatchRun, ParallelMatchesSerialAtEveryTestedWorkerCount) {
         const auto parallel = run_batch_parallel(cases, 20, workers);
         EXPECT_LE(max_abs_temperature_difference(serial, parallel), 1e-8) << "workers=" << workers;
     }
+}
+
+// Day 11 validation pass: found by auditing run_batch_parallel's
+// implementation directly (not from a failing test) -- with
+// num_workers=0, the worker-thread loop spawns zero threads, so the
+// pre-sized result vector would previously come back completely
+// unpopulated (every CaseResult default/zero) rather than raising an
+// error. A caller checking only "did this throw" would have silently
+// accepted fabricated-looking zeroed output. Now guarded explicitly.
+TEST(BatchRun, RejectsInvalidWorkerCount) {
+    const auto cases = generate_cases(1, 4, 5.0, 50.0, 1000.0, 20000.0);
+    EXPECT_THROW(run_batch_parallel(cases, /*mesh_elements=*/10, /*num_workers=*/0),
+                 std::invalid_argument);
+    EXPECT_THROW(run_batch_parallel(cases, /*mesh_elements=*/10, /*num_workers=*/-3),
+                 std::invalid_argument);
 }
 
 TEST(Hardware, LogicalCoresIsPositiveAndMatchesStdThread) {

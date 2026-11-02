@@ -126,8 +126,8 @@ TelemetrySession read_telemetry(const ConnectResult& session, int count) {
     // catalog.
     DeviceDescriptor active_device;
     bool found = false;
-    for (DeviceType t : {DeviceType::Microcontroller, DeviceType::Fpga, DeviceType::Jtag}) {
-        for (const auto& d : discover_devices(t)) {
+    for (DeviceType candidate_type : {DeviceType::Microcontroller, DeviceType::Fpga, DeviceType::Jtag}) {
+        for (const auto& d : discover_devices(candidate_type)) {
             if (d.id == session.device_id) {
                 active_device = d;
                 found = true;

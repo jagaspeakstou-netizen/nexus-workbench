@@ -1,5 +1,7 @@
-# Backend
-backend/build/
+# Backend (build/ is the normal dev build; build_warn/, build_asan/,
+# build_tsan/ etc. are ad hoc validation builds -- see
+# docs/architecture/validation.md -- never meant to be committed)
+backend/build*/
 backend/webview2_packages/
 **/webview2_user_data/
 

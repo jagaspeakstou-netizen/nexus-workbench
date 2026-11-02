@@ -49,6 +49,15 @@ BatchRunResult run_batch_serial(const std::vector<ThermalCase>& cases, int mesh_
 // pre-allocated slot by case index -- NOT via push_back from worker
 // threads -- so result ordering is deterministic regardless of which
 // thread finishes which case first or in what order.
+//
+// Throws std::invalid_argument if num_workers < 1. Day 11 validation
+// pass: with zero workers, zero threads get spawned, so the pre-sized
+// (but default-constructed, i.e. all-zero) result slots would otherwise
+// come back completely unpopulated -- silently wrong rather than an
+// error. run_full_benchmark() never triggers this itself (it clamps
+// worker counts to >= 1 before calling), so this guard exists purely to
+// make a direct misuse of this function fail loudly instead of
+// returning fabricated-looking zeroed data.
 BatchRunResult run_batch_parallel(const std::vector<ThermalCase>& cases, int mesh_elements,
                                    int num_workers);
 
