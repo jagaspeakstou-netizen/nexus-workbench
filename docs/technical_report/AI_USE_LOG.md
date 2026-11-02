@@ -176,24 +176,49 @@ never been looked at, exactly the gap §8 of `docs/packaging/windows.md`
 and §6.1/§8 of `REPORT.md` had themselves flagged as a disclosed
 limitation ("the screenshot's visual contents were never inspected").
 
-**Root cause (confirmed):** `windows-latest` GitHub Actions runners are
-Windows Server images, not Windows 11 client — visible directly in the
-screenshot's own desktop watermark ("Windows Server 2025 Datacenter").
-Windows Server does not ship the WebView2 Runtime pre-installed the way
-Windows 11 client does, so the one dependency this project deliberately
-doesn't bundle was simply missing on the machine used to "verify" it.
+**First root-cause theory (2026-11-02, round 1) — tested and found
+wrong:** `windows-latest` GitHub Actions runners are Windows Server
+images, not Windows 11 client — visible directly in the screenshot's
+own desktop watermark ("Windows Server 2025 Datacenter"). The
+hypothesis was that Server doesn't ship the WebView2 Runtime
+pre-installed the way Windows 11 client does. A fix was pushed
+(install the Runtime in CI, and detect the error dialog via an exact
+`FindWindow` title match instead of trusting "process alive" alone)
+and a fresh CI run went green — but the candidate pulled the new
+screenshot and **the same startup-error dialog was still showing**,
+disproving the theory outright: the run's own log showed the WebView2
+Runtime was already present (v155.0.4283.62), confirmed by the
+registry check added for exactly this purpose. Worse, the hardened
+detection itself had a second bug — the exact-title `FindWindow` match
+silently failed (the dialog's title was independently garbled by an
+MSVC source-encoding issue, below), so the CI job reported "success"
+a second time despite the launch still failing. Caught again only by
+the candidate personally inspecting the new screenshot.
 
-**Fix:** `.github/workflows/windows-build.yml` now (1) installs the
-WebView2 Evergreen Runtime on the runner before launching, so the CI
-environment is a true proxy for the brief's actual target again, and
-(2) explicitly detects the "NEXUS — Startup Error" dialog window via
-`FindWindow` and fails the job if it appears, rather than treating a
-"responding" process as proof of a successful launch. Full detail:
-[`docs/packaging/windows.md`](../packaging/windows.md).
+**Second round (2026-11-02):** rather than guess a third root cause,
+two real fixes were made instead of one more theory:
+1. **Diagnostics, not guesswork** — `Launcher.cpp` now logs the actual
+   `HRESULT` and system error text from the failing WebView2 call to
+   `launcher_error.log` beside `Launch.exe` (`LogStartupFailure()`),
+   and CI copies/inlines that file into the run's evidence. The next
+   run will show the *real* error code instead of another guess.
+2. **The detection bug itself, fixed properly** — the exact-title
+   `FindWindow` match is replaced with `EnumWindows` + a substring
+   check for `"Startup Error"` across every top-level window title,
+   which cannot be defeated by an exact-string/encoding mismatch the
+   way the previous check was. Separately, the garbled title itself
+   (an em-dash literal in the `.cpp` source being mis-decoded by MSVC)
+   is fixed by switching to a `—` escape sequence plus an explicit
+   `/utf-8` compiler flag in `CMakeLists.txt`, so the title renders
+   correctly regardless of source-encoding assumptions.
 
-**Status:** fix pushed; re-verification pending a fresh CI run with its
-screenshot personally inspected again before any "VERIFIED" claim is
-restored anywhere in this project's docs.
+Full detail: [`docs/packaging/windows.md`](../packaging/windows.md).
+
+**Status:** two real, disclosed detection/diagnosis failures in a row,
+corrected rather than hidden. The actual WebView2 initialization defect
+is **still not root-caused** — `launcher_error.log`'s first real run is
+what will tell us the true `HRESULT`. No "VERIFIED" claim is made
+anywhere in this project's docs until that log has been read.
 
 ## What this log does not claim
 

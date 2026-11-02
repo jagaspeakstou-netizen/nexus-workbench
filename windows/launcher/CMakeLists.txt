@@ -47,6 +47,18 @@ target_compile_definitions(nexus_launcher PRIVATE UNICODE _UNICODE)
 target_include_directories(nexus_launcher PRIVATE "${WEBVIEW2_DIR}/build/native/include")
 set_target_properties(nexus_launcher PROPERTIES OUTPUT_NAME "Launch")
 
+# Defense in depth: a 2026-11-02 run showed MSVC mis-decoding a literal
+# non-ASCII character embedded in this project's UTF-8-saved .cpp files
+# (an em-dash rendered as mojibake in a message-box title) because the
+# compiler's source charset wasn't explicitly set. Launcher.cpp's string
+# literals have since been rewritten to use \u escapes instead (immune to
+# this regardless), but this flag is added too so any future source file
+# in this target that does embed a literal non-ASCII character is decoded
+# correctly rather than silently mangled at compile time.
+if(MSVC)
+  target_compile_options(nexus_launcher PRIVATE /utf-8)
+endif()
+
 # Prefer the statically-linked loader (no extra DLL to ship); fall back to
 # the dynamic loader + its DLL if a given SDK version doesn't ship the
 # static variant. Whichever path is taken is recorded in the CMake
@@ -75,7 +87,11 @@ else()
     "and adjust the paths above.")
 endif()
 
-target_link_libraries(nexus_launcher PRIVATE Shlwapi)
+# Oleaut32 is needed for _com_error::ErrorMessage() (comdef.h, used by
+# LogStartupFailure in Launcher.cpp to turn a raw HRESULT into real
+# diagnostic text) -- not auto-linked by a bare CMake executable target the
+# way a Visual Studio project template would.
+target_link_libraries(nexus_launcher PRIVATE Shlwapi Oleaut32)
 
 # Stage the backend executable and the built frontend beside Launch.exe so
 # the whole output directory is a single relocatable application folder.

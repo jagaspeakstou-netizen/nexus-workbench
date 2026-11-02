@@ -27,30 +27,49 @@ when a modal error dialog is showing — its message loop keeps pumping,
 so the process is technically "responding" while the app has not
 actually started.
 
-**Root cause:** `windows-latest` GitHub Actions runners are Windows
-*Server* images (confirmed directly from that screenshot's own desktop
+**Round 1 theory — tested and disproven:** `windows-latest` runners are
+Windows *Server* images (confirmed from that screenshot's own desktop
 watermark: "Windows Server 2025 Datacenter"), not literal Windows 11
-client. Microsoft's documented guarantee that the WebView2 Runtime ships
-pre-installed applies specifically to Windows 11 client — Windows Server
-does not include it by default, so the one OS-level dependency this
-project deliberately doesn't bundle (§ below) was simply absent on the
-machine used to "verify" it.
+client, and Microsoft's "WebView2 ships pre-installed" guarantee applies
+specifically to Windows 11 client. The first fix installed the WebView2
+Evergreen Runtime in CI and added a `FindWindow`-based check for the
+error dialog. A fresh CI run went green — but the candidate pulled the
+new screenshot anyway and **the exact same startup-error dialog was
+still showing**. The run's own log showed the WebView2 Runtime was
+already present (v155.0.4283.62) before the install step even ran, so
+"runtime missing" was never the real cause. The hardened detection had
+its own bug too: the exact-title `FindWindow` match silently failed
+(see below), so CI reported "success" a second time despite the launch
+still failing — caught, again, only by personally looking at the
+screenshot.
 
-**Fix, in two parts** (`.github/workflows/windows-build.yml`):
-1. A new step installs the WebView2 Evergreen Runtime on the runner
-   before launching — the same installer `Launch.exe`'s own error dialog
-   already points a user to. This makes the CI runner a true proxy for
-   the brief's actual target (Windows 11 x64 client) again, rather than
-   papering over the gap.
-2. The launch-verification step is hardened to explicitly detect the
-   `"NEXUS — Startup Error"` dialog window (via `FindWindow`) and fail
-   the job if it's present — closing the exact detection gap that let a
-   real failure get reported as a pass. `Stop-Process`-ing a process that
-   is merely "responding" is not the same as confirming it launched.
+**Round 2 — diagnostics instead of a third guess** (pushed 2026-11-02):
+1. `windows/launcher/Launcher.cpp` now logs the actual `HRESULT` and
+   system error text from the failing WebView2 call to
+   `launcher_error.log` beside `Launch.exe`
+   (`LogStartupFailure()`) — the next run will show the real error code
+   instead of another theory, and CI copies/inlines that file into the
+   run's evidence.
+2. The detection bug is fixed properly: exact-title `FindWindow` is
+   replaced with `EnumWindows` + a substring check for `"Startup Error"`
+   across every top-level window title, immune to the exact-string
+   mismatch that broke the first attempt.
+3. That mismatch had its own cause, fixed too: the dialog's title
+   contains an em-dash written as a literal UTF-8 byte sequence in the
+   `.cpp` source, which MSVC — without an explicit source-charset flag —
+   mis-decoded into mojibake (visible in both captured screenshots as
+   `â€"` instead of `—`). Fixed via a `—` escape sequence plus an
+   explicit `/utf-8` flag in `windows/launcher/CMakeLists.txt`.
+4. The WebView2 Runtime install step from round 1 is kept (harmless,
+   usually a no-op) but is no longer claimed as *the* fix.
 
-This is disclosed here, in `docs/technical_report/AI_USE_LOG.md`, and in
-the technical report, rather than silently re-running CI and only
-keeping the "VERIFIED" claim below once it happens to go green.
+This is disclosed here, in `docs/technical_report/AI_USE_LOG.md` Item 8,
+and in the technical report — two real, consecutive detection failures,
+corrected rather than hidden, rather than silently re-running CI and
+only keeping a "VERIFIED" claim once it happens to go green. **The
+actual WebView2 initialization defect is still not root-caused** —
+`launcher_error.log`'s first real run is what will say what it actually
+is.
 
 ## How the evidence in this document was produced
 

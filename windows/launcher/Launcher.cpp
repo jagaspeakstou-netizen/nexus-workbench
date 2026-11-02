@@ -33,6 +33,8 @@
 #include <wrl.h>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <comdef.h>
 #include "WebView2.h"
 
 #pragma comment(lib, "shlwapi.lib")
@@ -113,18 +115,42 @@ void ResizeWebViewToClientArea(HWND hwnd) {
   g_webviewController->put_Bounds(bounds);
 }
 
-// Shows a plain Win32 message box describing a WebView2 setup failure.
-// This is the one path where the WebView2 Runtime genuinely isn't present
-// (it should be, by default, on Windows 11) — see docs/packaging/windows.md
-// for what we actually observed when testing this.
+// Title uses an explicit — escape (not a literal em-dash byte sequence
+// in the source file) deliberately: a real run on 2026-11-02 showed this
+// title rendered as mojibake ("NEXUS \xE2\x82\xAC\x94 Startup Error") because
+// MSVC, without an explicit UTF-8 source-charset flag, mis-decoded the UTF-8
+// bytes of a literal em-dash in this .cpp file as three separate CP1252
+// characters. An escape sequence is ASCII in the source and immune to that
+// regardless of the compiler's assumed source encoding -- the actual bug
+// found on 2026-11-02, see docs/packaging/windows.md and AI_USE_LOG.md Item 8.
+constexpr wchar_t kStartupErrorTitle[] = L"NEXUS \u2014 Startup Error";
+
+// Appends a line to launcher_error.log beside Launch.exe, so a startup
+// failure leaves a real, inspectable HRESULT behind instead of only a
+// generic message box -- added after a 2026-11-02 CI run showed the
+// WebView2 Runtime WAS present (v155.0.4283.62) yet initialization still
+// failed, meaning "runtime missing" was the wrong diagnosis and nothing
+// in this file was capturing the actual error code to find the right one.
+void LogStartupFailure(const std::wstring& appDir, const wchar_t* stage, HRESULT hr) {
+  std::wofstream log(appDir + L"launcher_error.log", std::ios::app);
+  if (!log) return;
+  _com_error err(hr);
+  log << L"[" << stage << L"] HRESULT=0x" << std::hex << static_cast<unsigned long>(hr)
+      << L" (" << (err.ErrorMessage() ? err.ErrorMessage() : L"no message") << L")\n";
+}
+
+// Shows a plain Win32 message box describing a WebView2 setup failure, and
+// logs the real HRESULT via LogStartupFailure (called by the caller before
+// this) rather than only guessing "runtime missing" in the user-facing text.
 void ShowWebView2MissingError() {
   MessageBoxW(
       nullptr,
       L"NEXUS could not start the Microsoft Edge WebView2 component.\n\n"
-      L"This ships with Windows 11 by default. If it's missing, install "
-      L"the WebView2 Runtime from https://go.microsoft.com/fwlink/p/?LinkId=2124703 "
-      L"and relaunch NEXUS.",
-      L"NEXUS — Startup Error",
+      L"If the WebView2 Runtime is missing, install it from "
+      L"https://go.microsoft.com/fwlink/p/?LinkId=2124703 and relaunch NEXUS.\n\n"
+      L"A diagnostic log was written to launcher_error.log beside this "
+      L"application for troubleshooting if the problem persists.",
+      kStartupErrorTitle,
       MB_OK | MB_ICONERROR);
 }
 
@@ -138,6 +164,7 @@ void InitializeWebView(HWND hwnd, const std::wstring& appDir) {
       Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>(
           [hwnd, appDir](HRESULT envResult, ICoreWebView2Environment* env) -> HRESULT {
             if (FAILED(envResult) || env == nullptr) {
+              LogStartupFailure(appDir, L"CreateCoreWebView2EnvironmentWithOptions", envResult);
               ShowWebView2MissingError();
               return envResult;
             }
@@ -147,6 +174,7 @@ void InitializeWebView(HWND hwnd, const std::wstring& appDir) {
                 Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
                     [hwnd, appDir](HRESULT ctrlResult, ICoreWebView2Controller* controller) -> HRESULT {
                       if (FAILED(ctrlResult) || controller == nullptr) {
+                        LogStartupFailure(appDir, L"CreateCoreWebView2Controller", ctrlResult);
                         ShowWebView2MissingError();
                         return ctrlResult;
                       }
@@ -172,6 +200,7 @@ void InitializeWebView(HWND hwnd, const std::wstring& appDir) {
           .Get());
 
   if (FAILED(hr)) {
+    LogStartupFailure(appDir, L"CreateCoreWebView2EnvironmentWithOptions (synchronous)", hr);
     ShowWebView2MissingError();
   }
 }
