@@ -1,0 +1,35 @@
+==============================================================================
+AI challenge test: thermal FEA element load-vector formulation
+==============================================================================
+
+Problem: L=1.0 m, A=0.0001 m^2, k=10.0 W/(m.K), q=10000.0 W/m^3, T0=100.0 C, TL=20.0 C
+
+--- Energy-conservation check (total heat injected, pre-BC) ---
+Physically correct total generated heat, q*A*L = 1.000000e+00 W
+  N= 10  correct formulation injects 1.000000e+00 W (matches q*A*L: True)
+  N= 10  proposed formulation injects 2.000000e+00 W (= 2.00x the physically correct total -- energy conservation violated)
+  N= 40  correct formulation injects 1.000000e+00 W (matches q*A*L: True)
+  N= 40  proposed formulation injects 2.000000e+00 W (= 2.00x the physically correct total -- energy conservation violated)
+
+--- Nodal-temperature comparison against the closed-form exact solution ---
+
+  N=10:
+    max |correct_FE  - exact| over all nodes = 5.684e-14 C (expected ~machine precision, confirms nodal exactness)
+    max |proposed_FE - exact| over all nodes = 1.250e+02 C (expected LARGE -- proposed formulation is wrong)
+    at domain midpoint (x=0.500 m): exact=185.000 C, correct_FE=185.000 C, proposed_FE=310.000 C (proposed overshoots by +125.000 C)
+
+  N=40:
+    max |correct_FE  - exact| over all nodes = 7.674e-13 C (expected ~machine precision, confirms nodal exactness)
+    max |proposed_FE - exact| over all nodes = 1.250e+02 C (expected LARGE -- proposed formulation is wrong)
+    at domain midpoint (x=0.500 m): exact=185.000 C, correct_FE=185.000 C, proposed_FE=310.000 C (proposed overshoots by +125.000 C)
+
+--- Closed-form prediction of the proposed formulation's error ---
+  Predicted overshoot at x=0.500 m: 125.000 C (algebraic prediction: doubling the load vector is equivalent to solving with q'=2q, so the extra term is exactly (q/2k)*x*(L-x))
+
+==============================================================================
+CONCLUSION: the proposed formulation (qAh per node, not qAh/2) violates global energy
+conservation by exactly 2x and produces nodal temperatures that deviate from the exact
+solution by tens of degrees C at this problem's scale -- not a rounding-level discrepancy.
+The suggestion is INCORRECT. The committed implementation (qAh/2, thermal.cpp line 52)
+already uses the correct formulation and required no change.
+==============================================================================
