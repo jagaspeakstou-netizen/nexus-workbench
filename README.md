@@ -9,18 +9,20 @@ technical assignment (Web & Software Development track).
 
 Implemented and verified: **Geometry Lab**, **Thermal Analysis**,
 **Performance Lab**, **Neural Computation**, **Hardware Integration**
-(mock adapters — see caveat below), **Validation & Tests** (plus the
-API/core walking skeleton and Overview page). 63/63 backend tests pass
-on both this project's Linux dev container (plain build, a strict
-warnings build, and under AddressSanitizer+UndefinedBehaviorSanitizer)
-and on a real `windows-latest` GitHub Actions runner — see
+(mock adapters — see caveat below), **Validation & Tests**,
+**Documentation** (plus the API/core walking skeleton and Overview
+page). 63/63 backend tests pass on both this project's Linux dev
+container (plain build, a strict warnings build, and under
+AddressSanitizer+UndefinedBehaviorSanitizer) and on a real
+`windows-latest` GitHub Actions runner — see
 [`docs/architecture/validation.md`](docs/architecture/validation.md).
-**Documentation** is mostly complete (see
-[`docs/technical_report/`](docs/technical_report/)) but the AI-use log
-has one entry still awaiting the candidate's own input, disclosed as
-such rather than filled in by the AI. See `/api/status` for the live,
-code-driven source of this list (`backend/src/core/status.cpp`), which
-is what the Overview page actually renders.
+Full technical report, end-to-end UI check writeup, and AI-use log
+(including a documented AI challenge test, run and verified on an
+isolated review branch) are in
+[`docs/technical_report/`](docs/technical_report/). See `/api/status`
+for the live, code-driven source of this list
+(`backend/src/core/status.cpp`), which is what the Overview page
+actually renders.
 
 **Hardware Integration caveat:** no physical microcontroller, FPGA, or
 JTAG probe is attached to this project. That module is a deterministic
