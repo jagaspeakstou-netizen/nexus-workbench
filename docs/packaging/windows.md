@@ -97,7 +97,7 @@ provides `CoInitializeEx`/`CoUninitialize`).
 
 ## How the evidence in this document was produced
 
-**Status: re-verification pending (2026-11-02).** Round 3's fix removed the
+**Status: VERIFIED (2026-11-02), after four rounds — see Round 4 below.** Round 3's fix removed the
 startup-error dialog (run 41383120271: real window title, no dialog, no
 `launcher_error.log`, 63/63 tests) — but the screenshot from that same
 run, which the candidate downloaded and opened, shows a **blank white
@@ -115,7 +115,7 @@ Tested locally: `/`, the JS asset and `/api/status` all return 200.
 CI now also fails the launch step unless the SPA is served over HTTP
 **and** the window's pixels are not near-white (a check on the rendered
 content itself, not just titles). Run [41386336629](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41386336629) passed those gates: SPA served (True), window
-99.8% non-white. Still not called verified until its screenshot is looked at.
+99.8% non-white. **VERIFIED:** the candidate opened that run's screenshot, which shows the real NEXUS "System Overview" UI (sidebar, live module status from the C++ backend) rendered in `Launch.exe` on the Windows runner — [`evidence/windows_launch_screenshot_run41386336629.png`](evidence/windows_launch_screenshot_run41386336629.png).
 
 - Repository:
   [github.com/jagaspeakstou-netizen/nexus-workbench](https://github.com/jagaspeakstou-netizen/nexus-workbench)

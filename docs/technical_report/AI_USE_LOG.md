@@ -250,7 +250,7 @@ conclusion in this item; each was caught by looking at the actual
 screenshot, which is why no further claim is made here until a fresh
 run's screenshot has been looked at.
 
-**Status:** run [41386336629](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41386336629) passes the new gates (SPA served; window 99.8% non-white). Screenshot not yet looked at, so not called verified.
+**Status:** run [41386336629](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41386336629) passes the new gates (SPA served; window 99.8% non-white). The candidate then opened that run's screenshot: the real NEXUS UI renders (saved as `docs/packaging/evidence/windows_launch_screenshot_run41386336629.png`). Verified.
 
 ## What this log does not claim
 

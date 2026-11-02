@@ -98,7 +98,7 @@ A native WebView2 shell (`Launch.exe`) spawns `nexus_server.exe` and
 displays the built frontend — no terminal/admin/internet/install step
 on a clean Windows 11 machine. Statically-linked MSVC CRT. Real
 launch defects (missing `CoInitializeEx`; blank `file://` page, §6) were
-found and fixed here — re-verification pending.
+found and fixed here; final screenshot confirms the UI renders.
 
 
 ## 3. Architecture
@@ -157,7 +157,7 @@ This dev environment is Linux; Windows behavior is verified only via
 | — | `dec8171` | Failed | `interface`/COM macro collision (§2.5) |
 | — | `11138f1` | Passed | 60/60 tests, fix verified |
 | [41373581581](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41373581581) | `01a865e` | Passed | 63/63 tests, incl. new `BatchRun.RejectsInvalidWorkerCount` — confirmed via `gh run view --log`, not the checkmark alone |
-| [41383120271](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41383120271) | `f621e83` | Passed; window blank | 63/63 tests. `CoInitializeEx` fixed the error dialog, but the screenshot shows a blank window (`file://` cannot load the Vite bundle). Fixed by serving the SPA over HTTP; CI now checks rendered pixels. Run [41386336629](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41386336629) passes the new gates; screenshot check pending. [`AI_USE_LOG.md`](AI_USE_LOG.md) |
+| [41383120271](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41383120271) | `f621e83` | Passed; window blank | 63/63 tests. `CoInitializeEx` fixed the error dialog, but the screenshot shows a blank window (`file://` cannot load the Vite bundle). Fixed by serving the SPA over HTTP; CI now checks rendered pixels. Run [41386336629](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41386336629) passes the new gates and its screenshot shows the real UI (`docs/packaging/evidence/`). [`AI_USE_LOG.md`](AI_USE_LOG.md) |
 
 
 ## 7. End-to-end UI verification
@@ -178,7 +178,7 @@ replaced with a page reading the same live `/api/status` as Overview.
 
 - **Hardware Integration is fully simulated** — no physical device attached (§2.5).
 - **Performance Lab's absolute timings are container-specific** (2 logical CPUs, shared/virtualized host); two otherwise-identical runs measured 1.30×/65% and 1.80×/90%. The 0.0 °C numerical-agreement result is the load-bearing claim, not the absolute speedup figure.
-- **The Windows standalone launch is not yet re-verified after the blank-window fix** (§6) — two earlier "confirmed" claims were wrong, each caught only by looking at a CI screenshot. No claim is made until a fresh run's screenshot shows the rendered UI.
+- **The Windows launch needed four fix rounds** (§6); the final CI screenshot shows the UI rendering. Two earlier "confirmed" claims were wrong, each caught only by viewing a screenshot.
 - **The packaged `Launch.exe`/`nexus_server.exe` binary built by CI could not be downloaded into this dev environment** (Azure Blob network restriction) — the candidate pulled it manually from the Actions UI instead.
 - **The e2e UI check (§7) runs on demand, not wired into CI as an automated gate** — a real remaining gap.
 
