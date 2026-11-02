@@ -115,7 +115,7 @@ jobs:
         run: |
           $appDir = "${{ steps.locate.outputs.app_dir }}"
           $proc = Start-Process -FilePath "$appDir\Launch.exe" -PassThru
-          Start-Sleep -Seconds 6
+          Start-Sleep -Seconds 10
 
           Add-Type -AssemblyName System.Windows.Forms
           Add-Type -AssemblyName System.Drawing
@@ -132,9 +132,9 @@ jobs:
           Add-Type -TypeDefinition $win32TypeDef
 
           $stillRunning = -not $proc.HasExited
-          "Launch.exe still running after 6s: $stillRunning" | Out-File launch_status.txt
+          "Launch.exe still running after 10s: $stillRunning" | Out-File launch_status.txt
           Get-Process -Id $proc.Id -ErrorAction SilentlyContinue | Format-List * | Out-File -Append launch_status.txt
-          Write-Host "Launch.exe still running after 6s: $stillRunning"
+          Write-Host "Launch.exe still running after 10s: $stillRunning"
 
           $allTitles = [Win32]::GetAllWindowTitles()
           "All top-level window titles at screenshot time:" | Out-File -Append launch_status.txt
@@ -150,8 +150,35 @@ jobs:
           $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
           $bitmap.Save("$env:GITHUB_WORKSPACE\windows_launch_screenshot.png")
 
+          # 2026-11-02: a run that passed every check above still produced a
+          # BLANK white window (frontend loaded via file:// cannot work; see
+          # Launcher.cpp). Title/process checks cannot see that, so check
+          # the rendered content itself: (1) the backend really serves the
+          # SPA over HTTP, (2) the app window's pixels are not near-white.
+          $rectType = 'using System; using System.Runtime.InteropServices; public class Win32Rect { [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; } [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r); }'
+          Add-Type -TypeDefinition $rectType
+          $httpOk = $false
+          try {
+            $page = Invoke-WebRequest -Uri "http://127.0.0.1:8787/" -UseBasicParsing -TimeoutSec 10
+            $httpOk = ($page.StatusCode -eq 200) -and ($page.Content -match 'id="root"')
+          } catch { Write-Host "HTTP check error: $_" }
+          Write-Host "Backend serves the SPA at http://127.0.0.1:8787/ : $httpOk"
+          $rect = New-Object Win32Rect+RECT
+          [Win32Rect]::GetWindowRect($proc.MainWindowHandle, [ref]$rect) | Out-Null
+          $x0 = [Math]::Max($rect.Left + 20, 0); $x1 = [Math]::Min($rect.Right - 20, $bitmap.Width - 1)
+          $y0 = [Math]::Max($rect.Top + 80, 0);  $y1 = [Math]::Min($rect.Bottom - 60, $bitmap.Height - 1)
+          $total = 0; $nonWhite = 0
+          for ($y = $y0; $y -lt $y1; $y += 8) { for ($x = $x0; $x -lt $x1; $x += 8) {
+            $c = $bitmap.GetPixel($x, $y); $total++
+            if ($c.R -lt 235 -or $c.G -lt 235 -or $c.B -lt 235) { $nonWhite++ }
+          } }
+          $ratio = if ($total -gt 0) { $nonWhite / $total } else { 0 }
+          Write-Host ("Window content region {0},{1}-{2},{3}: {4}/{5} sampled pixels non-white ({6:P1})" -f $x0,$y0,$x1,$y1,$nonWhite,$total,$ratio)
+          "Backend serves SPA: $httpOk; non-white content ratio: $ratio" | Out-File -Append launch_status.txt
+          $renderedBlank = ($ratio -lt 0.02)
+
           if (-not $stillRunning) {
-            throw "Launch.exe exited within 6 seconds of starting -- treating this as a launch failure, not capturing it as success."
+            throw "Launch.exe exited within 10 seconds of starting -- treating this as a launch failure, not capturing it as success."
           }
           # Launcher.cpp's LogStartupFailure() writes a real HRESULT + error
           # message to launcher_error.log beside Launch.exe on any WebView2
@@ -178,6 +205,11 @@ jobs:
           if ($startupErrorShown) {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
             throw "Launch.exe is running but showing its own 'Startup Error' dialog (see windows_launch_screenshot.png and launcher_error.log) -- treating this as a launch failure, not capturing it as success. A process that is merely 'responding' is not the same as a successful launch."
+          }
+
+          if (-not $httpOk -or $renderedBlank) {
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            throw "Launch.exe window is running with no error dialog, but the app did not render (served over HTTP: $httpOk, blank window: $renderedBlank) -- a launch failure, not a success."
           }
 
           Stop-Process -Id $proc.Id -Force

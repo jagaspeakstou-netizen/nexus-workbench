@@ -12,6 +12,8 @@
 
 #include <httplib.h>
 #include <nlohmann/json.hpp>
+#include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -447,6 +449,24 @@ int main(int argc, char** argv) {
     server.Get("/api/hardware/report", [](const httplib::Request&, httplib::Response& res) {
         res.set_content(hw_full_report_to_json().dump(), "application/json");
     });
+
+    // Packaged build: also serve the built frontend (frontend/ beside the
+    // working directory, or NEXUS_FRONTEND_DIR) over HTTP. Needed because the
+    // Windows launcher's WebView2 cannot render the Vite bundle from file://
+    // (absolute /assets/... URLs resolve to file:///assets/..., and module
+    // scripts are blocked on file://) -- found when a CI screenshot of the
+    // "successful" launch showed a blank white window. Registered after the
+    // /api routes; mounted files only match if they exist, so /api/* is
+    // unaffected. No-op in dev, where the Vite server serves the frontend.
+    {
+        const char* env_dir = std::getenv("NEXUS_FRONTEND_DIR");
+        const std::string frontend_dir = env_dir ? env_dir : "frontend";
+        std::error_code ec;
+        if (std::filesystem::exists(std::filesystem::path(frontend_dir) / "index.html", ec)) {
+            server.set_mount_point("/", frontend_dir);
+            std::cout << "Serving frontend from " << frontend_dir << " at /\n";
+        }
+    }
 
     std::cout << "NEXUS backend listening on http://127.0.0.1:" << port << "\n";
     std::cout << "Try: curl http://127.0.0.1:" << port << "/api/status\n";

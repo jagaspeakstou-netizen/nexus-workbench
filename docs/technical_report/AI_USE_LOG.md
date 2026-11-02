@@ -236,20 +236,21 @@ single confident paragraph.
 
 Full detail: [`docs/packaging/windows.md`](../packaging/windows.md).
 
-**Status:** fix pushed and confirmed by run
-[41383120271](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41383120271)
-(2026-11-02) — its text log shows the real application window title
-("NEXUS Engineering Intelligence Workbench"), `Startup error dialog
-detected (substring match): False`, no `launcher_error.log` produced,
-and `100% tests passed out of 63`. The one remaining caveat: this
-project's sandboxed environment still cannot download that run's
-`windows_launch_screenshot.png` binary itself (Azure Blob Storage is
-blocked here, as throughout this whole investigation), so — unlike the
-two prior, wrong "VERIFIED" claims, which were never checked against
-anything at all — this one is backed by the run's real text log but
-not yet by a personal look at the screenshot pixels. See
-[`docs/packaging/windows.md`](../packaging/windows.md) for the full
-evidence and that caveat.
+**Round 4 (2026-11-02) — "VERIFIED" was premature again.** Run
+41383120271 passed every check (no error dialog, real window title, 63/63
+tests) and I wrote "VERIFIED" from its text log. The candidate then
+opened that run's screenshot: the window was **blank white**. The checks
+could only see titles and processes, not content. Cause: the Vite bundle
+uses absolute `/assets/...` URLs and module scripts, which cannot load
+from the `file://` URL the launcher navigated to. Fix: the backend now
+serves the built frontend over HTTP and the launcher navigates to
+`http://127.0.0.1:8787/`; CI now asserts the SPA is served and that the
+window's pixels are not near-white. This is the third wrong "it works"
+conclusion in this item; each was caught by looking at the actual
+screenshot, which is why no further claim is made here until a fresh
+run's screenshot has been looked at.
+
+**Status:** round 4 fix pushed; re-verification pending.
 
 ## What this log does not claim
 

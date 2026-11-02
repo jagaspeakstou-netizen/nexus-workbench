@@ -96,9 +96,9 @@ fixed by renaming the C++ identifier.
 
 A native WebView2 shell (`Launch.exe`) spawns `nexus_server.exe` and
 displays the built frontend — no terminal/admin/internet/install step
-on a clean Windows 11 machine. Statically-linked MSVC CRT. A real
-launch defect (missing `CoInitializeEx`, §6) was found and fixed here,
-confirmed by a fresh CI run's own text log.
+on a clean Windows 11 machine. Statically-linked MSVC CRT. Real
+launch defects (missing `CoInitializeEx`; blank `file://` page, §6) were
+found and fixed here — re-verification pending.
 
 
 ## 3. Architecture
@@ -157,7 +157,7 @@ This dev environment is Linux; Windows behavior is verified only via
 | — | `dec8171` | Failed | `interface`/COM macro collision (§2.5) |
 | — | `11138f1` | Passed | 60/60 tests, fix verified |
 | [41373581581](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41373581581) | `01a865e` | Passed | 63/63 tests, incl. new `BatchRun.RejectsInvalidWorkerCount` — confirmed via `gh run view --log`, not the checkmark alone |
-| [41383120271](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41383120271) | `f621e83` | Passed, launch confirmed | 63/63 tests. Root cause was missing `CoInitializeEx`; fixed. Log shows the real app window, no error dialog, no `launcher_error.log`. Full account: [`AI_USE_LOG.md`](AI_USE_LOG.md), [`windows.md`](../packaging/windows.md). |
+| [41383120271](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41383120271) | `f621e83` | Passed; window blank | 63/63 tests. `CoInitializeEx` fixed the error dialog, but the screenshot shows a blank window (`file://` cannot load the Vite bundle). Fixed by serving the SPA over HTTP; CI now checks rendered pixels. Re-verification pending. [`AI_USE_LOG.md`](AI_USE_LOG.md) |
 
 
 ## 7. End-to-end UI verification
@@ -178,7 +178,7 @@ replaced with a page reading the same live `/api/status` as Overview.
 
 - **Hardware Integration is fully simulated** — no physical device attached (§2.5).
 - **Performance Lab's absolute timings are container-specific** (2 logical CPUs, shared/virtualized host); two otherwise-identical runs measured 1.30×/65% and 1.80×/90%. The 0.0 °C numerical-agreement result is the load-bearing claim, not the absolute speedup figure.
-- **The Windows standalone launch defect (missing `CoInitializeEx`) is fixed and confirmed by CI run 41383120271's text log** (§6) — the original "confirmed" claim was wrong, caught by finally inspecting a CI screenshot; this re-fix is backed by that run's own diagnostics, not a screenshot personally viewed here (download blocked, see below).
+- **The Windows standalone launch is not yet re-verified after the blank-window fix** (§6) — two earlier "confirmed" claims were wrong, each caught only by looking at a CI screenshot. No claim is made until a fresh run's screenshot shows the rendered UI.
 - **The packaged `Launch.exe`/`nexus_server.exe` binary built by CI could not be downloaded into this dev environment** (Azure Blob network restriction) — the candidate pulled it manually from the Actions UI instead.
 - **The e2e UI check (§7) runs on demand, not wired into CI as an automated gate** — a real remaining gap.
 

@@ -97,42 +97,25 @@ provides `CoInitializeEx`/`CoUninitialize`).
 
 ## How the evidence in this document was produced
 
-**Status: VERIFIED (2026-11-02) — the standalone launch genuinely
-succeeds**, confirmed by run
-[41383120271](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41383120271)'s
-own text log (`gh run view 41383120271 --log`), read directly rather
-than estimated or assumed:
+**Status: re-verification pending (2026-11-02).** Round 3's fix removed the
+startup-error dialog (run 41383120271: real window title, no dialog, no
+`launcher_error.log`, 63/63 tests) — but the screenshot from that same
+run, which the candidate downloaded and opened, shows a **blank white
+window**. So "VERIFIED" written after round 3 was premature: it rested on
+title/process/log checks, none of which can see rendered content.
 
-- `100% tests passed out of 63` (ctest, Release, Windows).
-- `Launch.exe still running after 6s: True`.
-- `All top-level window titles: NEXUS Engineering Intelligence
-  Workbench | ...` — the real application window title, present and
-  correctly rendered (no mojibake); no "Startup Error" window anywhere
-  in that list.
-- `Startup error dialog detected (substring match): False` — the exact
-  check that correctly caught the real failure in round 2's run now
-  correctly reports none.
-- `No launcher_error.log was written (no WebView2 init failure
-  occurred, or Launch.exe could not write to its own directory).` —
-  the file `LogStartupFailure()` writes on any WebView2 init failure
-  was not produced at all, consistent with a clean startup.
-
-**One honest caveat:** this project's sandboxed environment still
-cannot download the run's binary artifacts (`windows_launch_screenshot.png`,
-`NEXUS_Windows_x64.zip` — the Azure Blob Storage host they're served
-from is blocked by this environment's network egress policy, the same
-limit noted throughout this document and `AI_USE_LOG.md`), so the
-screenshot's pixels have not been personally looked at by this
-project directly this time either. What is different from the two
-prior "VERIFIED" claims that turned out wrong is that this run's own
-*text* log — which is exactly the data the launch-verification step
-inspects to decide pass/fail, and which caught both prior real
-failures correctly — independently confirms the same thing a visual
-inspection would: the real app window, no error dialog, no error log.
-Pulling `windows_launch_screenshot.png` from that run's Artifacts
-section for a final visual confirmation is still worthwhile before
-treating this as closed, exactly as it was what caught the original
-defect.
+**Round 4 — blank window.** The built Vite `index.html` references
+`/assets/index-*.js` (absolute path, `type="module"`). Loaded from
+`file:///.../frontend/index.html`, those resolve to `file:///assets/...`
+and module scripts are blocked on `file://` anyway, so nothing loaded.
+Fix: `nexus_server` now serves `frontend/` over HTTP
+(`set_mount_point`, `backend/src/api/main.cpp`; `NEXUS_FRONTEND_DIR`
+override) and `Launcher.cpp` navigates to `http://127.0.0.1:8787/`.
+Tested locally: `/`, the JS asset and `/api/status` all return 200.
+CI now also fails the launch step unless the SPA is served over HTTP
+**and** the window's pixels are not near-white (a check on the rendered
+content itself, not just titles). Not claimed fixed until a fresh run
+passes those gates and its screenshot is looked at.
 
 - Repository:
   [github.com/jagaspeakstou-netizen/nexus-workbench](https://github.com/jagaspeakstou-netizen/nexus-workbench)

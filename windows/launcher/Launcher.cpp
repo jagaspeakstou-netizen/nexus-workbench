@@ -185,13 +185,13 @@ void InitializeWebView(HWND hwnd, const std::wstring& appDir) {
 
                       ResizeWebViewToClientArea(hwnd);
 
-                      // The built SPA (frontend/dist, copied to frontend/
-                      // beside Launch.exe by the CMake post-build step).
-                      std::wstring indexPath = appDir + L"frontend\\index.html";
-                      std::wstring indexUrl = L"file:///" + indexPath;
-                      for (auto& c : indexUrl) {
-                        if (c == L'\\') c = L'/';
-                      }
+                      // Navigate over HTTP to the backend, which serves the
+                      // built SPA (frontend/ beside nexus_server.exe) at /.
+                      // A file:// load rendered a BLANK window (verified by
+                      // screenshot, 2026-11-02): the Vite bundle uses
+                      // absolute /assets/... URLs and module scripts, neither
+                      // of which work from file://.
+                      std::wstring indexUrl = L"http://127.0.0.1:8787/";
                       g_webview->Navigate(indexUrl.c_str());
                       return S_OK;
                     })
