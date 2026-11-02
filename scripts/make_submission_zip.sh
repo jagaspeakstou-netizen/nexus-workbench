@@ -41,8 +41,8 @@ if [ ${#PAGES[@]} -gt 0 ]; then
   [ ${#PAGES[@]} -le 2 ] || WARN+=("handwritten appendix has >2 pages")
 else WARN+=("handwritten appendix NOT included (pass -p page1.jpg -p page2.jpg)"); fi
 
-if grep -rIlE '/root/|/home/[a-z]|C:\\Users|/mnt/user' "$ROOT" --exclude='*.bundle' >/dev/null 2>&1; then
-  WARN+=("absolute paths remain: $(grep -rIlE '/root/|/home/[a-z]|C:\\Users|/mnt/user' "$ROOT" --exclude='*.bundle' | tr '\n' ' ')"); fi
+if grep -rIlE '/root/|/home/[a-z]|C:\\Users|/mnt/user' "$ROOT" --exclude='*.bundle' --exclude=make_submission_zip.sh >/dev/null 2>&1; then
+  WARN+=("absolute paths remain: $(grep -rIlE '/root/|/home/[a-z]|C:\\Users|/mnt/user' "$ROOT" --exclude='*.bundle' --exclude=make_submission_zip.sh | tr '\n' ' ')"); fi
 
 ZIP="$OUT/${ID}_Workbench.zip"; rm -f "$ZIP"
 (cd "$STAGE" && zip -qr "$ZIP" "${ID}_Workbench")

@@ -39,6 +39,21 @@ prominently in the API response, the UI, and
 [`docs/architecture/hardware_mocks.md`](docs/architecture/hardware_mocks.md),
 never presented as real device data.
 
+## Where the brief's required ZIP items live
+
+| Brief item | Location in this repo / ZIP |
+|---|---|
+| `src/` (frontend + C++ backend) | `frontend/`, `backend/` (+ `windows/launcher/` for the WebView2 shell) |
+| `CMakeLists.txt` + dependency locks | `backend/CMakeLists.txt`, `backend/vcpkg.json`, `frontend/package-lock.json` |
+| Editor run configuration | `.vscode/` |
+| `data/` with provenance | `data/*/README.md` |
+| `tests/` | `tests/README.md` points to the real suite in `backend/tests/` |
+| `Launch.exe` + packaged app | `NEXUS_Windows_x64/` (built by CI, see `docs/packaging/windows.md`) |
+| Handwritten appendix (Task F) | `docs/handwritten_appendix/` |
+| Version-control evidence | `docs/version_control/` (git bundle + commit log) |
+
+The ZIP is produced from committed state by `scripts/make_submission_zip.sh`.
+
 ## Prerequisites (source build)
 
 - CMake ≥ 3.16, a C++17 compiler (tested with GCC 13)
