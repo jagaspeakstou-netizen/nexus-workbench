@@ -16,13 +16,20 @@ container (plain build, a strict warnings build, and under
 AddressSanitizer+UndefinedBehaviorSanitizer) and on a real
 `windows-latest` GitHub Actions runner — see
 [`docs/architecture/validation.md`](docs/architecture/validation.md).
-Full technical report, end-to-end UI check writeup, and AI-use log
-(including a documented AI challenge test, run and verified on an
-isolated review branch) are in
-[`docs/technical_report/`](docs/technical_report/). See `/api/status`
-for the live, code-driven source of this list
+Full technical report, end-to-end UI check writeup, a timestamped
+demo walkthrough, and AI-use log (including a documented AI challenge
+test, run and verified on an isolated review branch) are in
+[`docs/technical_report/`](docs/technical_report/). Ownership statement
+and third-party license disclosure: [`docs/OWNERSHIP.md`](docs/OWNERSHIP.md),
+[`docs/THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md). See
+`/api/status` for the live, code-driven source of this list
 (`backend/src/core/status.cpp`), which is what the Overview page
 actually renders.
+
+**Known packaging gap:** CI (`windows-build.yml`) proves `Launch.exe`
+builds and launches cleanly on a real `windows-latest` runner, but the
+built binary has not been downloaded into this submission's ZIP — the
+candidate must pull it from the Actions UI before the ZIP is final.
 
 **Hardware Integration caveat:** no physical microcontroller, FPGA, or
 JTAG probe is attached to this project. That module is a deterministic

@@ -1,0 +1,65 @@
+2026-11-02T02:36:28+00:00 [1/6] Building backend (Release)
+[ 34%] Built target nexus_core
+[ 50%] Built target nexus_hardware_export
+[ 57%] Built target nexus_server
+[ 42%] Built target nexus_performance_export
+[ 65%] Built target nexus_neural_export
+[ 73%] Built target nexus_thermal_export
+[100%] Built target nexus_tests
+2026-11-02T02:36:28+00:00 [1/6] Backend build OK
+2026-11-02T02:36:28+00:00 [2/6] Starting nexus_server on :8787
+2026-11-02T02:36:29+00:00 [2/6] /api/status responded: {"app_name":"NEXUS Engineering Intelligence Workbench","cpp_standard":"C++17","modules":[{"id":"geometry","implemented":true,"label":"Geometry Lab","note":"ASCI...
+2026-11-02T02:36:29+00:00 [3/6] Building frontend (production)
+
+> nexus-frontend@0.1.0 build
+> tsc -b && vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 52 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.46 kB │ gzip:     0.32 kB
+dist/assets/index-DLVWx85G.css     12.70 kB │ gzip:     3.30 kB
+dist/assets/index-DHjZ8LZS.js   5,580.64 kB │ gzip: 1,689.08 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 20.31s
+2026-11-02T02:36:54+00:00 [3/6] Frontend build OK
+2026-11-02T02:36:54+00:00 [4/6] Starting vite preview on :4173
+  ➜  Local:   http://localhost:4173/
+  ➜  Network: use --host to expose
+2026-11-02T02:36:56+00:00 [5/6] Running scripts/e2e_check.py (cold-load, all 8 pages)
+[overview] ok=True backend_unreachable=False console_errors=0 page_errors=0 body_chars=1455
+[geometry] ok=True backend_unreachable=False console_errors=0 page_errors=0 body_chars=621
+[thermal] ok=True backend_unreachable=False console_errors=0 page_errors=0 body_chars=968
+[performance] ok=True backend_unreachable=False console_errors=0 page_errors=0 body_chars=1863
+[neural] ok=True backend_unreachable=False console_errors=0 page_errors=0 body_chars=1508
+[hardware] ok=True backend_unreachable=False console_errors=0 page_errors=0 body_chars=5341
+[validation] ok=True backend_unreachable=False console_errors=0 page_errors=0 body_chars=576
+[docs] ok=True backend_unreachable=False console_errors=0 page_errors=0 body_chars=687
+
+=== SUMMARY ===
+PASS  overview     Overview
+PASS  geometry     Geometry Lab
+PASS  thermal      Thermal Analysis
+PASS  performance  Performance Lab
+PASS  neural       Neural Computation
+PASS  hardware     Hardware Integration
+PASS  validation   Validation & Tests
+PASS  docs         Documentation
+2026-11-02T02:37:04+00:00 [5/6] e2e_check.py exit=0
+2026-11-02T02:37:04+00:00 [6/6] Running scripts/e2e_interactive.py (real interactive flows)
+STL sample loaded (no longer shows 'No STL loaded yet'): True
+CSV sample loaded (no longer shows 'No CSV loaded yet'): True
+Neural 're-run training' produced a result: True
+Hardware 're-run sequence' produced a result: True
+
+console/page errors during interactive flow: 0
+
+ALL INTERACTIVE CHECKS OK: True
+2026-11-02T02:37:11+00:00 [6/6] e2e_interactive.py exit=0
+2026-11-02T02:37:11+00:00 Shutting down server and preview

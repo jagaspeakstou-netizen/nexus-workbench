@@ -56,6 +56,7 @@ End-to-end UI check screenshots (real Playwright run against the built
 frontend + live backend, see [`E2E_CHECK.md`](E2E_CHECK.md)) — `e2e_evidence/`:
 - `overview.png`, `geometry.png`, `thermal.png`, `performance.png`, `neural.png`, `hardware.png`, `validation.png`, `docs.png` (cold-load, every sidebar page)
 - `geometry_after_stl_load.png`, `geometry_after_csv_load.png` (after real "Load sample" clicks)
+- `run_log.txt` — real timestamped console log of the single run that produced all 10 screenshots above, start (backend build) to finish (shutdown); see [`DEMO_WALKTHROUGH.md`](DEMO_WALKTHROUGH.md) for the §8-required demonstration walkthrough built from this log.
 
 ## A.4 Full reproduction commands
 

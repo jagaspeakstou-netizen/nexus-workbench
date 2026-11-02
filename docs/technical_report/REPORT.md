@@ -1,200 +1,134 @@
 # NEXUS — Engineering Intelligence Workbench
 ### Technical Report
 PASS Science Works R&D Internship 2026–2027 (Web & Software Development track)
-Candidate: Jagadeeshvar Muralidharan
+Candidate: Gaayathri Muralidharan
 Repository: https://github.com/jagaspeakstou-netizen/nexus-workbench
 
----
 
 ## 1. Overview
 
-NEXUS is a C++17/React engineering simulation workbench implementing six
-independent engineering-discipline modules behind a single HTTP API and a
-single web UI, plus a native Windows packaging path. Every number in this
-report — test counts, CI run results, convergence rates, benchmark
-timings — is drawn from a real, reproducible run recorded in this
-repository (CSV files under `results/`, commit history, or a linked
-GitHub Actions run), not estimated or asserted from memory. Where a
-limitation was found during development, it is disclosed here and in the
-relevant module's own architecture doc rather than edited out.
+NEXUS is a C++17/React engineering simulation workbench: six independent
+engineering-discipline modules behind one HTTP API and one web UI, plus
+a native Windows packaging path. Every number in this report (test
+counts, CI results, convergence rates, benchmark timings) is drawn from
+a reproducible run recorded in this repository — not estimated. Where a
+limitation was found, it is disclosed here and in that module's
+architecture doc rather than edited out.
 
 **Stack:** C++17 core (`backend/`, static lib `nexus_core` + a thin
-`cpp-httplib`/`nlohmann::json` HTTP layer), React + TypeScript + Vite +
-Tailwind frontend (`frontend/`), GoogleTest for all backend testing.
+`cpp-httplib`/`nlohmann::json` HTTP layer); React + TypeScript + Vite +
+Tailwind frontend (`frontend/`); GoogleTest for all backend testing.
 
-**Module status** (from `backend/src/core/status.cpp`, the single
-code-driven source the UI's Overview page itself renders — not a
-separately maintained claim):
+**Module status** — all 6 modules implemented and tested (source of
+truth: `backend/src/core/status.cpp`, the same code the UI's Overview
+page renders — not a separately maintained claim). **63/63 backend
+tests pass**, on this project's Linux container (plain, strict-warnings,
+and ASan+UBSan builds) and on a real `windows-latest` GitHub Actions
+runner (§5, §6).
 
-| Module | Status | Tests |
-|---|---|---|
-| Geometry Lab | Implemented, tested | included in 63 |
-| Thermal Analysis | Implemented, tested | included in 63 |
-| Performance Lab | Implemented, tested | included in 63 |
-| Hardware Integration (mock) | Implemented, tested | included in 63 |
-| Neural Computation | Implemented, tested | included in 63 |
-| Validation & Tests | Complete (Day 11 pass) | see §5 |
-| Documentation | This report | — |
-
-**Total backend test count: 63/63 passing**, verified on both this
-project's Linux dev container (plain build, a strict-warnings build, and
-under AddressSanitizer+UndefinedBehaviorSanitizer) and on a real
-`windows-latest` GitHub Actions runner (see §5 and §6).
-
----
 
 ## 2. Module summaries
 
-Full derivations and implementation notes live in each module's own
-architecture doc, linked below; this section gives the essential result
-each one proves.
+Full derivations live in each module's own architecture doc (linked);
+this section gives only the essential, evidenced result.
 
 ### 2.1 Geometry Lab
 *Full doc: [`docs/architecture/geometry_lab.md`](../architecture/geometry_lab.md)*
 
-Hand-rolled, line-numbered ASCII STL and ANSYS nodal-CSV parsers with
-strict grammar/schema validation (malformed input is rejected with a
-specific, located error — never silently coerced or crashed on). Real
-Three.js viewers (`MeshViewer`, `PointCloudViewer`) render the parsed
-JSON directly, with orbit controls, fit-to-view, and click-to-inspect
-raycasting on the point cloud.
+Hand-rolled ASCII STL and ANSYS nodal-CSV parsers with strict
+grammar/schema validation (malformed input rejected with a specific,
+located error). Three.js viewers (`MeshViewer`, `PointCloudViewer`)
+render the parsed JSON with orbit/fit-to-view and click-to-inspect.
 
 ### 2.2 Thermal Analysis
 *Full doc: [`docs/architecture/thermal_fea.md`](../architecture/thermal_fea.md)*
 
-1D steady-state FEA solver for `-d/dx(kA dT/dx) = qA` with Dirichlet
-boundaries, solved via symmetric elimination + the Thomas algorithm on
-the resulting tridiagonal system. The solver is nodally exact for this
-constant-source problem; the brief's required convergence metric — FE
-interpolation error at **element midpoints** — is checked against an
-independently-derived closed form `error(h) = q·h²/(8k)`, not just
-against the solver's own output. Measured midpoint error at
-N=10/20/40/80: **1.25, 0.3125, 0.078125, 0.01953125 °C** — each exactly
-4× smaller than the last, confirming the expected O(h²) rate.
+1D steady-state FEA for `-d/dx(kA dT/dx) = qA`, symmetric-elimination
+Dirichlet BCs, Thomas-algorithm tridiagonal solve. Nodally exact for
+this constant-source problem. Midpoint FE-interpolation error at
+N=10/20/40/80 — **1.25, 0.3125, 0.078125, 0.01953125 °C** — each exactly
+4× smaller than the last (confirmed O(h²) convergence, checked against
+an independently-derived closed form, not just the solver's own output).
 
-![Thermal FE vs exact solution and midpoint error](../../results/plots/thermal_profile_and_midpoint_error_n40.png)
-![Thermal mesh convergence, log-log, O(h²) reference](../../results/plots/thermal_mesh_convergence.png)
+<img src="../../results/plots/thermal_profile_and_midpoint_error_n40.png" width="320"><img src="../../results/plots/thermal_mesh_convergence.png" width="320">
 
 ### 2.3 Performance Lab
 *Full doc: [`docs/architecture/performance_lab.md`](../architecture/performance_lab.md)*
 
-Runs a reproducible (fixed-seed) batch of independent thermal solves
-both serially and across a bounded `std::thread` work-stealing pool,
-with deterministic result ordering (each worker writes to its own
-pre-assigned slot, never `push_back`) and an exact numerical-agreement
-check between the two paths (**0.0 °C difference measured** — both paths
-call the identical solver on identical inputs). Worker counts are capped
-to `std::thread::hardware_concurrency()`, never exceeding the machine's
-actual logical CPU count.
+Reproducible fixed-seed batch of thermal solves, serial vs. a bounded
+`std::thread` pool, deterministic result ordering, exact
+serial/parallel numerical agreement (**0.0 °C difference measured**).
+Worker count capped to `hardware_concurrency()`. This container's 2
+logical CPUs give **1.30× speedup / 65.1% efficiency at 2 workers**
+(4000 cases × N=200); an earlier under-scaled benchmark (40×N=40)
+measured *slower* parallel execution — a genuine mistake found, fixed,
+and left in the record rather than removed.
 
-This project's dev container reports 2 logical CPUs; at 4000 cases ×
-N=200 elements, the most recent recorded run measured **1.30× speedup /
-65.1% efficiency at 2 workers**. An earlier under-scaled version of this
-same benchmark (40 cases × N=40) measured *slower* parallel execution
-(thread-launch overhead exceeded the tiny per-case work) — a genuine
-benchmark-design mistake found and fixed during development, documented
-in the module's own doc rather than removed from the record.
-
-![Performance Lab speedup and efficiency](../../results/plots/performance_speedup_efficiency.png)
+<img src="../../results/plots/performance_speedup_efficiency.png" width="360">
 
 ### 2.4 Neural Computation
 *Full doc: [`docs/architecture/backprop.md`](../architecture/backprop.md)*
 
-Hand-derived backpropagation (no autodiff library) for a single hidden
-unit `x → (w,b) → z → tanh → h → (v,c) → ŷ`, `L = 0.5(ŷ-y)²`. Every
-analytic gradient is checked against a central finite-difference
-approximation (`ε = 1e-6`, tolerance `1e-5`) — and a **negative-control
-test** (`NeuralGradientCheck.CatchesADeliberatelyWrongGradient`) proves
-the check would actually fail on a wrong gradient, rather than being a
-check that can never fail. 100-step plain gradient descent converges the
-loss from 1.18 to effectively 0 (see plot).
+Hand-derived backprop (no autodiff) for one hidden unit,
+`x → (w,b) → z → tanh → h → (v,c) → ŷ`, `L = 0.5(ŷ-y)²`. Every analytic
+gradient checked against central finite differences (`ε=1e-6`,
+tol `1e-5`), with a negative-control test proving the check can
+actually fail. 100-step gradient descent converges loss 1.18 → ~0.
 
-![Neural training loss curve](../../results/plots/neural_training_loss.png)
-![Neural analytic vs finite-difference gradient check](../../results/plots/neural_gradient_check.png)
+<img src="../../results/plots/neural_training_loss.png" width="320"><img src="../../results/plots/neural_gradient_check.png" width="320">
 
 ### 2.5 Hardware Integration
 *Full doc: [`docs/architecture/hardware_mocks.md`](../architecture/hardware_mocks.md)*
 
-**No physical hardware is attached to this project.** This module is a
-deterministic (seeded, not randomized) software simulator implementing
-the discover → connect (scripted retry) → telemetry (scripted
-mid-session dropout + automatic reconnect) → pinout adapter pattern for
-Microcontroller/FPGA/JTAG device classes. This is disclosed at every
-layer: the API's own `mock_disclaimer` field, the frontend banner, the
-header comment, and the architecture doc's title — never presented as,
-or mistakeable for, real hardware telemetry.
+**No physical hardware is attached.** Deterministic (seeded) simulator:
+discover → connect (scripted retry) → telemetry (scripted dropout +
+auto-reconnect) → pinout, for Microcontroller/FPGA/JTAG. Disclosed at
+every layer (API field, frontend banner, header comment, doc title) —
+never presented as real telemetry. A genuine Windows-only compile
+failure was found and fixed here (§6.2): MSVC's `#define interface
+struct` COM macro collided with a field literally named `interface`;
+fixed by renaming the C++ identifier.
 
-![Hardware telemetry with simulated dropout and recovery](../../results/plots/hardware_telemetry_dropout_recovery.png)
-
-A genuine Windows-only compile failure was found and fixed in this
-module during development (§6.2) — `<combaseapi.h>`'s `#define interface
-struct` COM macro collided with a struct field literally named
-`interface`, compiling fine on Linux/GCC but breaking MSVC with a wall of
-cascading syntax errors. Fixed by renaming the C++ identifier (the JSON
-wire field stayed `"interface"` for frontend compatibility). Left in the
-record rather than silently fixed, per this project's disclosure policy.
+<img src="../../results/plots/hardware_telemetry_dropout_recovery.png" width="360">
 
 ### 2.6 Windows packaging
 *Full doc: [`docs/packaging/windows.md`](../packaging/windows.md)*
 
-A native WebView2 shell (`Launch.exe`, `windows/launcher/`) that spawns
-`nexus_server.exe` and displays the built frontend — no terminal, admin
-rights, internet access, or install step required on a clean Windows 11
-machine. Statically-linked MSVC CRT (no VC++ Redistributable dependency).
-Built and verified end-to-end on a real `windows-latest` GitHub Actions
-runner, including a 6-second "still running, not crashed" liveness check
-and a full-screen screenshot artifact (see §6.1 for what was and wasn't
-independently verifiable about that artifact).
+A native WebView2 shell (`Launch.exe`) spawns `nexus_server.exe` and
+displays the built frontend — no terminal/admin/internet/install step
+on a clean Windows 11 machine. Statically-linked MSVC CRT. Built and
+verified on a real `windows-latest` GitHub Actions runner (§6.1). **Known
+gap:** the actual binary produced by that runner could not be
+downloaded into this dev environment (Azure Blob Storage host is
+outside this session's network allowlist) — see §8.
 
----
 
 ## 3. Architecture
 
-```
-┌─────────────────────────┐        HTTP/JSON        ┌───────────────────────────┐
-│  frontend/ (React+TS)    │  ───────────────────▶   │  backend/src/api/main.cpp │
-│  src/services/api.ts     │  ◀───────────────────   │  (nexus_server)           │
-│  — one page per module   │                          └─────────────┬─────────────┘
-└─────────────────────────┘                                         │
-                                                         ┌───────────▼─────────────┐
-                                                         │   nexus_core (static)    │
-                                                         │  geometry / thermal /    │
-                                                         │  performance / neural /  │
-                                                         │  hardware / status       │
-                                                         └───────────────────────────┘
-```
-
-All computation lives in `nexus_core`; `main.cpp` only wires HTTP routes
-to it, so every module is independently unit-testable without the HTTP
-layer (the architecture every `test_<module>.cpp` file exercises
-directly). On Windows, `windows/launcher/` adds a `nexus_launcher`
-(`Launch.exe`) target that spawns `nexus_server.exe` as a child process
-and hosts the built frontend in a WebView2 control — see §2.6.
-
----
+`frontend/` (React+TS, one page per module) ⟷ HTTP/JSON ⟷
+`backend/src/api/main.cpp` (`nexus_server`) ⟷ `nexus_core` (static lib:
+geometry/thermal/performance/neural/hardware/status). All computation
+lives in `nexus_core`; `main.cpp` only wires HTTP routes to it, so every
+module is unit-testable without the HTTP layer — the architecture every
+`test_<module>.cpp` exercises directly. On Windows, `windows/launcher/`
+adds a `nexus_launcher` (`Launch.exe`) target that spawns
+`nexus_server.exe` and hosts the built frontend in WebView2 (§2.6).
 
 ## 4. Build and run
 
-See the top-level [`README.md`](../../README.md) for the full
-prerequisites and commands. Summary:
+Full prerequisites/commands: top-level [`README.md`](../../README.md).
 
 ```bash
-# Backend
-cd backend && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j && ./build/nexus_server 8787
-
-# Backend tests
-cd backend/build && ctest --output-on-failure
-
-# Frontend
-cd frontend && npm install && npm run dev
+cd backend && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
+./build/nexus_server 8787                       # backend
+cd backend/build && ctest --output-on-failure    # tests
+cd frontend && npm install && npm run dev        # frontend
 ```
 
-Windows: run `Launch.exe` from a built release (§2.6), or build from
-source in VS Code/Antigravity per
+Windows: run `Launch.exe` from a built release, or build from source in
+VS Code/Antigravity per
 [`docs/packaging/windows.md`](../packaging/windows.md#editor-based-source-build-vs-code-or-antigravity).
 
----
 
 ## 5. Validation (Day 11 pass)
 
@@ -212,75 +146,53 @@ Every finding above is backed by a named test or a quoted compiler/tool
 log in `validation.md` — this section is a summary of that document, not
 a separate claim.
 
----
 
 ## 6. Cross-platform CI evidence (GitHub Actions, `windows-latest`)
 
-This project's only genuinely independent verification of Windows
-behavior — this dev environment itself is Linux — comes from
-`.github/workflows/windows-build.yml` running on GitHub-hosted Windows
-runners. Three runs are relevant to this report:
+This dev environment is Linux; Windows behavior is verified only via
+`.github/workflows/windows-build.yml` on GitHub-hosted Windows runners.
 
-### 6.1 Initial packaging verification
-- **Run 1** ([41338201277](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338201277)) — failed: hardcoded CMake generator `"Visual Studio 17 2022"` didn't match that runner's actually-installed VS 18. Fixed by letting CMake auto-detect the generator.
-- **Run 2** ([41338521566](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338521566)) — passed: MSVC 19.51.36260.0, 43/43 tests, `Launch.exe` confirmed still running 6 seconds after launch, statically-linked WebView2 loader confirmed. **Disclosed gap:** the run's screenshot artifact could not be downloaded in this environment (its Azure Blob Storage host is outside this session's network allowlist) — its *existence* is verified via the workflow's own pass/fail gate, but its visual contents were never personally inspected here; the candidate should pull it from the Actions UI before relying on it in an interview.
+| Run | Commit | Result | Note |
+|---|---|---|---|
+| [41338201277](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338201277) | — | Failed | Hardcoded CMake generator didn't match runner's installed VS — fixed by auto-detect |
+| [41338521566](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41338521566) | — | Passed | 43/43 tests, MSVC 19.51, `Launch.exe` confirmed alive 6s post-launch, static WebView2 loader. Screenshot artifact's *existence* verified via the gate; contents never personally inspected (Azure Blob host outside this session's allowlist) |
+| — | `dec8171` | Failed | `interface`/COM macro collision (§2.5) |
+| — | `11138f1` | Passed | 60/60 tests, fix verified |
+| [41373581581](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41373581581) | `01a865e` | Passed | 63/63 tests, incl. new `BatchRun.RejectsInvalidWorkerCount` — confirmed via `gh run view --log`, not the checkmark alone |
 
-### 6.2 Hardware Integration module
-- A run against commit `dec8171` failed to compile: the `interface` field / COM macro collision described in §2.5.
-- The fix (commit `11138f1`) then passed: **60/60 tests on real Windows**.
-
-### 6.3 Day 11 validation pass
-- Run [41373581581](https://github.com/jagaspeakstou-netizen/nexus-workbench/actions/runs/41373581581) against commit `01a865e` — passed: **63/63 tests on real Windows**, including the new `BatchRun.RejectsInvalidWorkerCount` regression test. Confirmed by reading the run's own log directly (`gh run view --log`), not by the green checkmark alone.
-
----
 
 ## 7. End-to-end UI verification
 
-Full detail: [`docs/technical_report/E2E_CHECK.md`](E2E_CHECK.md). A real
-Playwright/Chromium browser was driven against the **built** frontend
-(`npm run build` + `vite preview`, not the dev server) talking to the
-**live** C++ backend (`nexus_server`, release build) — every sidebar
-page cold-loaded with zero console/page errors and no "backend
-unreachable" state, plus a second pass exercising real interactive
-flows (loading sample geometry, re-running neural training, re-running
-the hardware sequence), also zero errors. This check found and fixed a
-real, previously-shipped bug: the "Validation & Tests" and
-"Documentation" sidebar pages were hardcoded to always claim "not
-implemented yet," stale since Day 11/14 actually implemented both —
-replaced with a page that reads the same live `/api/status` the
-Overview page uses, so it can't drift out of sync again.
+Full detail: [`E2E_CHECK.md`](E2E_CHECK.md); timestamped
+screenshot-and-log walkthrough: [`DEMO_WALKTHROUGH.md`](DEMO_WALKTHROUGH.md).
+Real Playwright/Chromium driven against the **built** frontend
+(`vite preview`, not the dev server) talking to the **live** backend —
+every sidebar page cold-loaded with zero console/page errors, plus
+real interactive flows (load sample geometry, re-run neural training,
+re-run hardware sequence), also zero errors. This check found and
+fixed a real shipped bug: "Validation & Tests" and "Documentation"
+were hardcoded to claim "not implemented yet," stale since Day 11/14 —
+replaced with a page reading the same live `/api/status` as Overview.
 
----
 
 ## 8. Known limitations (disclosed, not hidden)
 
-- **Hardware Integration is fully simulated** — no physical device was ever attached (§2.5).
-- **Performance Lab's absolute timings are container-specific** — this dev environment reports only 2 logical CPUs on what is very likely a shared, virtualized host; two otherwise-identical runs produced 1.30×/65% and 1.80×/90% speedup at different moments. The numerical-agreement result (0.0 °C) is the load-bearing claim, not the absolute speedup figure.
-- **The Windows CI screenshot artifact's visual contents were never inspected from this environment** (§6.1) — only its existence and the pass/fail gate around it.
-- **The end-to-end UI check (§7) was run once, interactively, not wired into CI as an automated gate** — a real remaining gap: adding it to `.github/workflows/` as its own job is the natural next step, not attempted here due to time.
-- **Rubric self-scoring is not included in this report** — it requires the assignment's own grading rubric, which this environment does not currently have a copy of.
+- **Hardware Integration is fully simulated** — no physical device attached (§2.5).
+- **Performance Lab's absolute timings are container-specific** (2 logical CPUs, shared/virtualized host); two otherwise-identical runs measured 1.30×/65% and 1.80×/90%. The 0.0 °C numerical-agreement result is the load-bearing claim, not the absolute speedup figure.
+- **The Windows CI screenshot artifact's visual contents were never inspected from this environment** — only its existence and the CI pass/fail gate (§6).
+- **The packaged `Launch.exe`/`nexus_server.exe` binary built by CI could not be downloaded into this dev environment** (same Azure Blob network restriction) — it must be pulled from the Actions UI before the ZIP is finalized.
+- **The e2e UI check (§7) runs on demand, not wired into CI as an automated gate** — a real remaining gap.
 
----
 
 ## 9. Reproducing this report's evidence
 
 ```bash
-# Regenerate every CSV cited above
 cd backend && cmake --build build -j
-./build/nexus_thermal_export ../results/csv
-./build/nexus_neural_export ../results/csv
-./build/nexus_hardware_export ../results/csv
-./build/nexus_performance_export ../results/benchmarks
-
-# Regenerate the plots in this report from those CSVs
-python3 scripts/generate_plots.py   # from the repo root; needs matplotlib
-
-# Full test suite
+./build/nexus_thermal_export ../results/csv && ./build/nexus_neural_export ../results/csv
+./build/nexus_hardware_export ../results/csv && ./build/nexus_performance_export ../results/benchmarks
+python3 scripts/generate_plots.py        # regenerate every plot above
 cd backend/build && ctest --output-on-failure
 ```
 
-See [`docs/architecture/validation.md`](../architecture/validation.md) for
-the sanitizer/warnings build commands, and
-[`E2E_CHECK.md`](E2E_CHECK.md) for the end-to-end UI check commands
-(`scripts/e2e_check.py`, `scripts/e2e_interactive.py`; needs
-`pip install playwright && playwright install chromium`).
+Full reproduction list (sanitizers, e2e check, challenge test, etc.):
+[`APPENDIX.md` §A.4](APPENDIX.md).
