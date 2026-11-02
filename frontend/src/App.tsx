@@ -6,22 +6,7 @@ import GeometryLab from "./pages/GeometryLab";
 import PerformanceLab from "./pages/PerformanceLab";
 import NeuralComputation from "./pages/NeuralComputation";
 import HardwareIntegration from "./pages/HardwareIntegration";
-import PendingModule from "./pages/PendingModule";
-
-const PENDING_DAYS: Record<string, string> = {
-  validation: "Day 11",
-  docs: "Day 14",
-};
-
-const LABELS: Record<string, string> = {
-  geometry: "Geometry Lab",
-  thermal: "Thermal Analysis",
-  performance: "Performance Lab",
-  hardware: "Hardware Integration",
-  neural: "Neural Computation",
-  validation: "Validation & Tests",
-  docs: "Documentation",
-};
+import ModuleStatusPage from "./pages/ModuleStatusPage";
 
 export default function App() {
   const [active, setActive] = useState("overview");
@@ -42,8 +27,24 @@ export default function App() {
           <NeuralComputation />
         ) : active === "hardware" ? (
           <HardwareIntegration />
+        ) : active === "validation" ? (
+          <ModuleStatusPage
+            moduleId="validation"
+            docLinks={[{ label: "Full validation pass writeup", href: "docs/architecture/validation.md" }]}
+          />
+        ) : active === "docs" ? (
+          <ModuleStatusPage
+            moduleId="docs"
+            docLinks={[
+              { label: "Technical report", href: "docs/technical_report/REPORT.md" },
+              { label: "AI-use log", href: "docs/technical_report/AI_USE_LOG.md" },
+              { label: "Appendix", href: "docs/technical_report/APPENDIX.md" },
+            ]}
+          />
         ) : (
-          <PendingModule label={LABELS[active]} dayPlanned={PENDING_DAYS[active]} />
+          // Fallback for any future sidebar id with no dedicated page yet --
+          // still live-status-driven, not a hardcoded claim.
+          <ModuleStatusPage moduleId={active} />
         )}
       </main>
     </div>

@@ -52,6 +52,11 @@ Labelled plots (generated from the above by `scripts/generate_plots.py`) — `re
 - `performance_speedup_efficiency.png`
 - `hardware_telemetry_dropout_recovery.png`
 
+End-to-end UI check screenshots (real Playwright run against the built
+frontend + live backend, see [`E2E_CHECK.md`](E2E_CHECK.md)) — `e2e_evidence/`:
+- `overview.png`, `geometry.png`, `thermal.png`, `performance.png`, `neural.png`, `hardware.png`, `validation.png`, `docs.png` (cold-load, every sidebar page)
+- `geometry_after_stl_load.png`, `geometry_after_csv_load.png` (after real "Load sample" clicks)
+
 ## A.4 Full reproduction commands
 
 ```bash
@@ -83,9 +88,16 @@ cmake -S . -B build_asan -DCMAKE_BUILD_TYPE=Debug \
 cmake --build build_asan -j
 cd build_asan && ASAN_OPTIONS=detect_leaks=1 ctest --output-on-failure  # expect 63/63 clean
 
-# 6. Frontend
+# 6. Frontend (dev mode)
 cd ../../frontend
 npm install && npm run dev
+
+# 7. End-to-end UI check (real backend + real built frontend; see E2E_CHECK.md)
+cd ../backend && cmake -S . -B build_release -DCMAKE_BUILD_TYPE=Release
+cmake --build build_release -j && ./build_release/nexus_server 8787 &
+cd ../frontend && npm run build && npx vite preview --port 4173 --strictPort &
+pip install --break-system-packages playwright && playwright install chromium
+cd .. && python3 scripts/e2e_check.py && python3 scripts/e2e_interactive.py
 ```
 
 ## A.5 Module → architecture doc map

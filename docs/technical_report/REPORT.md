@@ -234,17 +234,35 @@ runners. Three runs are relevant to this report:
 
 ---
 
-## 7. Known limitations (disclosed, not hidden)
+## 7. End-to-end UI verification
+
+Full detail: [`docs/technical_report/E2E_CHECK.md`](E2E_CHECK.md). A real
+Playwright/Chromium browser was driven against the **built** frontend
+(`npm run build` + `vite preview`, not the dev server) talking to the
+**live** C++ backend (`nexus_server`, release build) — every sidebar
+page cold-loaded with zero console/page errors and no "backend
+unreachable" state, plus a second pass exercising real interactive
+flows (loading sample geometry, re-running neural training, re-running
+the hardware sequence), also zero errors. This check found and fixed a
+real, previously-shipped bug: the "Validation & Tests" and
+"Documentation" sidebar pages were hardcoded to always claim "not
+implemented yet," stale since Day 11/14 actually implemented both —
+replaced with a page that reads the same live `/api/status` the
+Overview page uses, so it can't drift out of sync again.
+
+---
+
+## 8. Known limitations (disclosed, not hidden)
 
 - **Hardware Integration is fully simulated** — no physical device was ever attached (§2.5).
 - **Performance Lab's absolute timings are container-specific** — this dev environment reports only 2 logical CPUs on what is very likely a shared, virtualized host; two otherwise-identical runs produced 1.30×/65% and 1.80×/90% speedup at different moments. The numerical-agreement result (0.0 °C) is the load-bearing claim, not the absolute speedup figure.
 - **The Windows CI screenshot artifact's visual contents were never inspected from this environment** (§6.1) — only its existence and the pass/fail gate around it.
-- **End-to-end Playwright verification of every frontend page against a live backend has not yet been run as part of this pass** — unit/integration test coverage at the C++ layer is complete (63/63), but a full UI click-through pass is a remaining item, tracked separately from this report.
+- **The end-to-end UI check (§7) was run once, interactively, not wired into CI as an automated gate** — a real remaining gap: adding it to `.github/workflows/` as its own job is the natural next step, not attempted here due to time.
 - **Rubric self-scoring is not included in this report** — it requires the assignment's own grading rubric, which this environment does not currently have a copy of.
 
 ---
 
-## 8. Reproducing this report's evidence
+## 9. Reproducing this report's evidence
 
 ```bash
 # Regenerate every CSV cited above
@@ -262,4 +280,7 @@ cd backend/build && ctest --output-on-failure
 ```
 
 See [`docs/architecture/validation.md`](../architecture/validation.md) for
-the sanitizer/warnings build commands.
+the sanitizer/warnings build commands, and
+[`E2E_CHECK.md`](E2E_CHECK.md) for the end-to-end UI check commands
+(`scripts/e2e_check.py`, `scripts/e2e_interactive.py`; needs
+`pip install playwright && playwright install chromium`).
