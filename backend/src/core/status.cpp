@@ -10,7 +10,7 @@ std::vector<ModuleStatus> get_module_statuses() {
         {"hardware",    "Hardware Integration",  true,  true,  "Mock microcontroller/FPGA/JTAG adapters: discovery, connect retry, telemetry with timeout-recovery -- deterministic simulator, no physical hardware"},
         {"neural",      "Neural Computation",    true,  true,  "Hand-implemented backprop (tanh hidden unit), finite-difference gradient check verified"},
         {"validation",  "Validation & Tests",    true,  true,  "GCC -Wall/-Wextra/-Wpedantic/-Wshadow (0 warnings), ASan+UBSan and ThreadSanitizer clean across 63/63 tests, documented edge-case audit"},
-        {"docs",        "Documentation",         false, false, "Pending - Day 14"},
+        {"docs",        "Documentation",         true,  false, "Technical report + appendix complete (docs/technical_report/); AI-use log drafted but awaiting one candidate-supplied entry (an AI mistake the candidate personally caught) per the brief's requirement"},
     };
 }
 

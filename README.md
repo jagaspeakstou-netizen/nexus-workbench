@@ -9,12 +9,18 @@ technical assignment (Web & Software Development track).
 
 Implemented and verified: **Geometry Lab**, **Thermal Analysis**,
 **Performance Lab**, **Neural Computation**, **Hardware Integration**
-(mock adapters — see caveat below) (plus the API/core walking skeleton
-and Overview page). Not yet implemented: Validation pass, Documentation —
-all honestly reported as pending in the UI itself, not stubbed out
-silently. See `/api/status` for the live, code-driven source of this
-list (`backend/src/core/status.cpp`), which is what the Overview page
-actually renders.
+(mock adapters — see caveat below), **Validation & Tests** (plus the
+API/core walking skeleton and Overview page). 63/63 backend tests pass
+on both this project's Linux dev container (plain build, a strict
+warnings build, and under AddressSanitizer+UndefinedBehaviorSanitizer)
+and on a real `windows-latest` GitHub Actions runner — see
+[`docs/architecture/validation.md`](docs/architecture/validation.md).
+**Documentation** is mostly complete (see
+[`docs/technical_report/`](docs/technical_report/)) but the AI-use log
+has one entry still awaiting the candidate's own input, disclosed as
+such rather than filled in by the AI. See `/api/status` for the live,
+code-driven source of this list (`backend/src/core/status.cpp`), which
+is what the Overview page actually renders.
 
 **Hardware Integration caveat:** no physical microcontroller, FPGA, or
 JTAG probe is attached to this project. That module is a deterministic
@@ -64,7 +70,11 @@ silently showing stale or fake data.
   (mirrored in `src/types/status.ts`).
 - `data/`, `results/` — sample inputs and generated outputs for later
   phases (geometry files, thermal CSVs, benchmark results).
-- `docs/` — architecture notes, the technical report, and the AI-use log.
+- `docs/` — architecture notes
+  ([`docs/architecture/`](docs/architecture/)), Windows packaging
+  evidence ([`docs/packaging/windows.md`](docs/packaging/windows.md)),
+  and the technical report + AI-use log
+  ([`docs/technical_report/`](docs/technical_report/)).
 
 See the full requirements-to-rubric mapping and 15-day schedule in the
 companion planning doc (Phase 1 deliverable, shared separately).
