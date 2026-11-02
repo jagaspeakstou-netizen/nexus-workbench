@@ -49,7 +49,13 @@ SolveResult solve(const ProblemDefinition& p, int num_elements) {
     const int n_nodes = num_elements + 1;
     const double h = p.L / static_cast<double>(num_elements);
     const double ke_diag = p.k * p.A / h;     // kA/h
-    const double fe_term = p.q * p.A * h / 2.0;  // qAh/2, per node per element
+    // AI CHALLENGE TEST (review/ai-challenge-thermal-fea branch, temporary):
+    // deliberately applying the AI-proposed-and-rejected "qAh per node"
+    // formulation here to confirm the real GoogleTest suite actually
+    // catches it. See docs/technical_report/ai_challenge/ for the full
+    // writeup. This commit is reverted by the very next commit on this
+    // branch -- it never reaches main.
+    const double fe_term = p.q * p.A * h;  // CHALLENGE: qAh (full), not qAh/2
 
     // --- Assembly ---
     // Global stiffness is tridiagonal: diagonal[i] accumulates ke_diag from
