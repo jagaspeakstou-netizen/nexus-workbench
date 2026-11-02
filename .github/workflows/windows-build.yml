@@ -134,12 +134,15 @@ jobs:
           $stillRunning = -not $proc.HasExited
           "Launch.exe still running after 6s: $stillRunning" | Out-File launch_status.txt
           Get-Process -Id $proc.Id -ErrorAction SilentlyContinue | Format-List * | Out-File -Append launch_status.txt
+          Write-Host "Launch.exe still running after 6s: $stillRunning"
 
           $allTitles = [Win32]::GetAllWindowTitles()
           "All top-level window titles at screenshot time:" | Out-File -Append launch_status.txt
           $allTitles | Out-File -Append launch_status.txt
           $startupErrorShown = ($allTitles | Where-Object { $_ -match "Startup Error" }).Count -gt 0
           "Startup error dialog detected (substring match): $startupErrorShown" | Out-File -Append launch_status.txt
+          Write-Host "All top-level window titles: $($allTitles -join ' | ')"
+          Write-Host "Startup error dialog detected (substring match): $startupErrorShown"
 
           $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
           $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
@@ -159,6 +162,17 @@ jobs:
             Copy-Item $errorLogPath "$env:GITHUB_WORKSPACE\launcher_error.log"
             "--- launcher_error.log ---" | Out-File -Append launch_status.txt
             Get-Content $errorLogPath | Out-File -Append launch_status.txt
+            # Also echo to the step's own stdout (Write-Host), not just the
+            # artifact file -- a 2026-11-02 run showed this content only
+            # going to Out-File, which this project's own dev environment
+            # cannot read back (artifact downloads are blocked here, but the
+            # workflow's text log is not), so the real HRESULT was invisible
+            # without yet another round of asking a human to check a file.
+            Write-Host "--- launcher_error.log content ---"
+            Get-Content $errorLogPath | Write-Host
+            Write-Host "--- end launcher_error.log ---"
+          } else {
+            Write-Host "No launcher_error.log was written (no WebView2 init failure occurred, or Launch.exe could not write to its own directory)."
           }
 
           if ($startupErrorShown) {
