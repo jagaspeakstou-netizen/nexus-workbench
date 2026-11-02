@@ -29,6 +29,7 @@
 // actual clean-machine verification evidence this project collected.
 
 #include <windows.h>
+#include <objbase.h>  // CoInitializeEx / CoUninitialize
 #include <shlwapi.h>
 #include <wrl.h>
 #include <string>
@@ -222,6 +223,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 }  // namespace
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow) {
+  // Found via launcher_error.log on a real CI run (2026-11-02): without
+  // this call, CreateCoreWebView2EnvironmentWithOptions fails with
+  // HRESULT 0x800401f0 (CO_E_NOTINITIALIZED, "CoInitialize has not been
+  // called") -- WebView2's environment creation is COM-based and this app
+  // never initialized COM on its main thread. This was the actual root
+  // cause of the WebView2 startup-error dialog seen in two prior CI runs;
+  // neither the WebView2 Runtime's presence/absence nor the Windows
+  // Server-vs-11-client distinction (both investigated first, see
+  // AI_USE_LOG.md Item 8) was the real issue. COINIT_APARTMENTTHREADED
+  // matches how a UI-owning thread hosting a COM control like WebView2 is
+  // meant to initialize COM (STA).
+  HRESULT coInitResult = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+  if (FAILED(coInitResult)) {
+    MessageBoxW(nullptr,
+                L"NEXUS failed to initialize COM (CoInitializeEx). This is "
+                L"required before the WebView2 component can start.",
+                kStartupErrorTitle, MB_OK | MB_ICONERROR);
+    return 1;
+  }
+
   // Per-monitor DPI awareness so the WebView2 control renders crisply on
   // high-DPI displays. Available on Windows 10 1703+; always present on
   // Windows 11.
@@ -250,6 +271,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow) {
 
   if (hwnd == nullptr) {
     StopBackend();
+    CoUninitialize();
     return 1;
   }
 
@@ -265,5 +287,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow) {
   }
 
   StopBackend();
+  CoUninitialize();
   return static_cast<int>(msg.wParam);
 }

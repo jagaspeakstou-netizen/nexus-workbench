@@ -89,9 +89,13 @@ endif()
 
 # Oleaut32 is needed for _com_error::ErrorMessage() (comdef.h, used by
 # LogStartupFailure in Launcher.cpp to turn a raw HRESULT into real
-# diagnostic text) -- not auto-linked by a bare CMake executable target the
-# way a Visual Studio project template would.
-target_link_libraries(nexus_launcher PRIVATE Shlwapi Oleaut32)
+# diagnostic text); Ole32 for CoInitializeEx/CoUninitialize, added after a
+# real CI run (2026-11-02) showed WebView2 init failing with
+# CO_E_NOTINITIALIZED because this app never initialized COM -- the actual
+# root cause of the startup-error dialog investigated across AI_USE_LOG.md
+# Item 8. Neither is auto-linked by a bare CMake executable target the way
+# a Visual Studio project template would link them.
+target_link_libraries(nexus_launcher PRIVATE Shlwapi Oleaut32 Ole32)
 
 # Stage the backend executable and the built frontend beside Launch.exe so
 # the whole output directory is a single relocatable application folder.

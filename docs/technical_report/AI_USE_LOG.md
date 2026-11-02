@@ -212,13 +212,34 @@ two real fixes were made instead of one more theory:
    `/utf-8` compiler flag in `CMakeLists.txt`, so the title renders
    correctly regardless of source-encoding assumptions.
 
+**Round 3 (2026-11-02) — the actual root cause, from the first real
+diagnostic run:** `launcher_error.log`'s first real run showed:
+
+```
+[CreateCoreWebView2EnvironmentWithOptions] HRESULT=0x800401f0 (CoInitialize has not been called.)
+```
+
+`CO_E_NOTINITIALIZED` — `Launcher.cpp` never called `CoInitializeEx`
+before using WebView2's COM-based environment-creation API. This was
+the real cause all along; neither the WebView2 Runtime's
+presence/absence (round 1) nor the detection bug (round 2) was it —
+both of those were real, separate bugs, just not the one causing the
+dialog. Fixed with one call: `CoInitializeEx(nullptr,
+COINIT_APARTMENTTHREADED)` near the top of `wWinMain`, paired with
+`CoUninitialize()` on every exit path, plus linking `Ole32`
+(`windows/launcher/CMakeLists.txt`).
+
+This three-round sequence — wrong theory, a second bug hiding the
+first fix's own failure, then a real fix once real diagnostics existed
+— is left in this log exactly as it happened, not cleaned up into a
+single confident paragraph.
+
 Full detail: [`docs/packaging/windows.md`](../packaging/windows.md).
 
-**Status:** two real, disclosed detection/diagnosis failures in a row,
-corrected rather than hidden. The actual WebView2 initialization defect
-is **still not root-caused** — `launcher_error.log`'s first real run is
-what will tell us the true `HRESULT`. No "VERIFIED" claim is made
-anywhere in this project's docs until that log has been read.
+**Status:** fix pushed; re-verification pending a fresh CI run with its
+screenshot personally inspected before any "VERIFIED" claim is restored
+anywhere in this project's docs — the same discipline that was missing
+at the start of this whole investigation.
 
 ## What this log does not claim
 

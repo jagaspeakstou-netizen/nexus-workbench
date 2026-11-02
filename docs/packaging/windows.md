@@ -66,15 +66,42 @@ screenshot.
 This is disclosed here, in `docs/technical_report/AI_USE_LOG.md` Item 8,
 and in the technical report — two real, consecutive detection failures,
 corrected rather than hidden, rather than silently re-running CI and
-only keeping a "VERIFIED" claim once it happens to go green. **The
-actual WebView2 initialization defect is still not root-caused** —
-`launcher_error.log`'s first real run is what will say what it actually
-is.
+only keeping a "VERIFIED" claim once it happens to go green.
+
+**Round 3 — the real root cause, from the first real diagnostic run:**
+the round-2 fixes worked exactly as intended on the next CI run: the
+window title rendered correctly, the substring detection correctly
+caught the still-showing error dialog (and correctly failed the job
+instead of reporting a false pass), and — for the first time —
+`launcher_error.log`'s content was actually readable, via the
+`Write-Host` mirroring added alongside it. It read:
+
+```
+[CreateCoreWebView2EnvironmentWithOptions] HRESULT=0x800401f0 (CoInitialize has not been called.)
+```
+
+`CO_E_NOTINITIALIZED`. `windows/launcher/Launcher.cpp` calls
+`CreateCoreWebView2EnvironmentWithOptions`, which is COM-based, but the
+launcher never called `CoInitializeEx` anywhere — a plain Win32 app
+does not get COM initialized for it automatically. This was the actual
+cause behind both prior rounds' dialog; the Runtime-presence theory
+(round 1) and the detection bug (round 2) were both real, separate
+issues, just not this one.
+
+**Fix** (pushed): `CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)`
+near the top of `wWinMain`, paired with `CoUninitialize()` on every exit
+path, plus linking `Ole32` in `windows/launcher/CMakeLists.txt`
+(`Oleaut32` was already linked for `_com_error::ErrorMessage()`, a
+separate library with a similar name — `Ole32` is the one that actually
+provides `CoInitializeEx`/`CoUninitialize`).
 
 ## How the evidence in this document was produced
 
-**Status: being re-verified after the fix above; see the AI-use log and
-the most recent entry in the CI runs table for the current state.**
+**Status: the round-3 fix above has been pushed but not yet confirmed
+by a fresh CI run with its screenshot personally inspected. No
+"VERIFIED" claim is made here until that happens — see the AI-use log
+and the most recent entry in the CI runs table below for the current
+state.**
 
 - Repository:
   [github.com/jagaspeakstou-netizen/nexus-workbench](https://github.com/jagaspeakstou-netizen/nexus-workbench)
